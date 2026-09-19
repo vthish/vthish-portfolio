@@ -439,12 +439,29 @@ function Chatbot() {
   const [open, setOpen] = useState(false);
   const [typing, setTyping] = useState(false);
   const [input, setInput] = useState("");
+  const chatBodyRef = useRef<HTMLDivElement | null>(null);
   const [messages, setMessages] = useState([
     {
       from: "bot",
       text: "Hi! I’m VT Assistant. Ask me about Venusha’s services, tech stack, projects, education or how to contact him.",
     },
   ]);
+
+  useEffect(() => {
+    if (!open) return;
+
+    const frame = window.requestAnimationFrame(() => {
+      const body = chatBodyRef.current;
+      if (!body) return;
+
+      body.scrollTo({
+        top: body.scrollHeight,
+        behavior: "smooth",
+      });
+    });
+
+    return () => window.cancelAnimationFrame(frame);
+  }, [messages, typing, open]);
 
   const reply = (text: string) => {
     const q = text.toLowerCase();
@@ -554,7 +571,7 @@ function Chatbot() {
               <div className="chat-intro-icon"><Icons.sparkles size={16}/></div>
               <div><strong>Ask anything about Venusha</strong><span>Services, skills, projects, education or contact details.</span></div>
             </div>
-            <div className="chat-body">
+            <div className="chat-body" ref={chatBodyRef}>
               {messages.map((message, index) => (
                 <motion.div
                   key={`${message.from}-${index}`}
