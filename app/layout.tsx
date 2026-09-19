@@ -5,13 +5,17 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "Venusha Thishan | Software Engineer",
   description:
-    "Portfolio of Venusha Thishan — software engineer building web, mobile, AI and automation experiences.",
+    "Portfolio of Venusha Thishan — software engineer building modern web, mobile, cloud and automation products.",
   keywords: [
     "Venusha Thishan",
     "Software Engineer",
     "Full Stack Developer",
+    "Next.js Developer",
+    "Node.js Developer",
+    "Nest.js Developer",
     "Flutter Developer",
-    "AI Developer",
+    "DevOps",
+    "Docker",
     "Sri Lanka",
   ],
 };

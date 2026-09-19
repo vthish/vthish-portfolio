@@ -1,6 +1,13 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <defs><linearGradient id="g" x1="0" x2="1"><stop stop-color="#76f7d7"/><stop offset="1" stop-color="#baff5b"/></linearGradient></defs>
-  <rect width="64" height="64" rx="16" fill="#07090c"/>
-  <rect x="6" y="6" width="52" height="52" rx="13" fill="url(#g)"/>
-  <text x="32" y="40" text-anchor="middle" font-family="Arial, sans-serif" font-size="25" font-weight="900" fill="#06110e">VT</text>
+  <defs>
+    <linearGradient id="g" x1="0" x2="1">
+      <stop stop-color="#7cc6ff"/>
+      <stop offset="0.55" stop-color="#5f8cff"/>
+      <stop offset="1" stop-color="#8d72ff"/>
+    </linearGradient>
+  </defs>
+  <rect width="64" height="64" rx="18" fill="#070b15"/>
+  <rect x="4" y="4" width="56" height="56" rx="15" fill="url(#g)"/>
+  <path d="M15 20h10l7 24 7-24h10L38 49H26L15 20Z" fill="#071126"/>
+  <path d="M40 20h10v7h-5v22h-9V27h-5v-7h9Z" fill="#071126" opacity=".92"/>
 </svg>

@@ -4,15 +4,16 @@ A modern animated developer portfolio for Venusha Thishan, built with Next.js, R
 
 ## Included
 
-- Animated premium dark UI / responsive layout
+- Blue / violet premium dark UI
+- Animated constellation / network background inspired by a connected-node visual
 - Hero with rotating developer roles
-- Project showcase for 7 GitHub repositories
-- Skills and education sections
-- WhatsApp "Hire Me" CTA with a pre-filled recruiter message
-- CV link
-- GitHub, GitLab and LinkedIn links
-- Dummy portfolio chatbot (front-end only)
-- Motion-based scroll, hover and reveal effects
+- Rich bento-style project cards for 7 GitHub repositories
+- Expanded skills for TypeScript, JavaScript, Java, Python, Dart, Next.js, Node.js, Nest.js, Spring Boot, Flutter, Docker, AWS, databases and CI/CD
+- Web development, mobile app development and DevOps service cards
+- WhatsApp **Hire Me** CTA with a pre-filled recruiter message
+- CV, GitHub, GitLab and LinkedIn links
+- Rule-based portfolio assistant that can answer about services, skills, projects, education, phone number, email, CV and WhatsApp
+- Responsive mobile/tablet/desktop layout
 - Reduced-motion accessibility support
 
 ## Run in VS Code
@@ -33,12 +34,12 @@ npm run build
 
 ## Push to your repo
 
-If you are starting from this generated folder:
+If the remote is not configured yet:
 
 ```bash
 git init
 git add .
-git commit -m "build modern portfolio"
+git commit -m "redesign portfolio"
 git branch -M main
 git remote add origin https://github.com/vthish/vthish-portfolio.git
 git push -u origin main
@@ -49,18 +50,14 @@ If the remote already exists:
 ```bash
 git remote set-url origin https://github.com/vthish/vthish-portfolio.git
 git add .
-git commit -m "build modern portfolio"
+git commit -m "redesign portfolio"
 git push -u origin main
 ```
 
 ## WhatsApp behavior
 
-The current portfolio uses a `wa.me` deep link. A recruiter clicks **Hire Me**, WhatsApp opens with a pre-filled message, and the recruiter taps **Send**. A website cannot silently send a WhatsApp message from another person's account without an authenticated WhatsApp Business/Cloud API backend.
+The portfolio uses a `wa.me` deep link. When a recruiter clicks **Hire Me**, WhatsApp opens with a pre-filled message for Venusha. The recruiter still taps **Send**.
 
-## Dummy chatbot
+## Portfolio assistant
 
-`components/Portfolio.tsx` contains a front-end demo chatbot with canned replies. Later, replace its reply function with an API route backed by your preferred model/provider.
-
-## Project descriptions
-
-The displayed descriptions are short portfolio-friendly summaries inferred from the public repository names. Replace them with exact README-derived descriptions whenever you want more technical detail.
+`components/Portfolio.tsx` currently contains a local rule-based assistant. It does not need an API key. Later, the `reply()` logic can be replaced with a real chatbot API while keeping the same UI.
