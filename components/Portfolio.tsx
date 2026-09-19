@@ -88,6 +88,18 @@ const Icons = {
   chevron: (p: IconProps) => (
     <Icon {...p}><path d="m6 9 6 6 6-6"/></Icon>
   ),
+  graduation: (p: IconProps) => (
+    <Icon {...p}><path d="m2 10 10-5 10 5-10 5Z"/><path d="M6 12.5V17c2.8 2.5 9.2 2.5 12 0v-4.5"/><path d="M22 10v6"/></Icon>
+  ),
+  certificate: (p: IconProps) => (
+    <Icon {...p}><circle cx="12" cy="8" r="5"/><path d="m9 12-2 9 5-3 5 3-2-9"/><path d="m10.5 8 1 1 2-2"/></Icon>
+  ),
+  layers: (p: IconProps) => (
+    <Icon {...p}><path d="m12 2 9 5-9 5-9-5Z"/><path d="m3 12 9 5 9-5"/><path d="m3 17 9 5 9-5"/></Icon>
+  ),
+  external: (p: IconProps) => (
+    <Icon {...p}><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></Icon>
+  ),
 };
 
 const socialLinks = [
@@ -100,38 +112,42 @@ const projects = [
   {
     number: "01",
     title: "Auto Ledger",
-    category: "Automation / Finance",
-    description: "A finance-focused automation system designed to simplify ledger workflows, record handling and everyday business tracking.",
+    category: "Full-Stack / GovTech",
+    description: "A secure multi-role digital driving-licence, traffic-fine and penalty-points platform with two Flutter apps, a Next.js admin portal and a NestJS REST API deployed on AWS.",
     href: "https://github.com/vthish/Auto-Ledger",
-    chips: ["Automation", "Finance"],
-    stack: ["Next.js", "Node.js", "PostgreSQL"],
+    chips: ["5 Roles", "QR Verification", "AWS Deployment"],
+    stack: ["Flutter", "Dart", "Next.js 16", "React 19", "NestJS 11", "TypeScript", "PostgreSQL", "Prisma ORM", "AWS", "Docker", "GitLab CI/CD"],
+    Icon: Icons.database,
   },
   {
     number: "02",
     title: "PulseAid Android",
-    category: "Mobile / Utility",
-    description: "A mobile-first Android application built around practical utility flows and a clean, accessible user experience.",
+    category: "Android / Healthcare",
+    description: "A real-time blood donation management app connecting donors, hospitals, blood banks and admins through role-specific dashboards, emergency alerts and Firebase-backed data syncing.",
     href: "https://github.com/vthish/PulseAid-Android",
-    chips: ["Android", "Mobile"],
-    stack: ["Java", "Android", "UI/UX"],
+    chips: ["Blood Donation", "Real-time", "Multi-role"],
+    stack: ["Java", "Firebase Firestore", "Firebase Auth", "Material Design", "XML", "MVVM"],
+    Icon: Icons.phone,
   },
   {
     number: "03",
-    title: "Smart Expense Categorizer",
-    category: "Smart Automation / Finance",
-    description: "A smart expense workflow focused on organizing and classifying financial records with better speed, clarity and automation.",
+    title: "Smart Expense AI",
+    category: "Mobile / FinTech / ML",
+    description: "A Flutter expense tracker that understands natural-language entries, extracts amounts, predicts categories and supports a self-learning workflow through a FastAPI machine-learning backend.",
     href: "https://github.com/vthish/Smart-Expense-Categorizer",
-    chips: ["Smart", "Expenses"],
-    stack: ["Python", "Automation", "Finance"],
+    chips: ["NLP", "Self-learning", "Finance"],
+    stack: ["Flutter", "Dart", "FastAPI", "Python", "Firebase Firestore", "Firebase Auth", "Scikit-learn", "Pandas", "Docker"],
+    Icon: Icons.sparkles,
   },
   {
     number: "04",
     title: "HVTM Care",
-    category: "Forecasting / Healthcare",
-    description: "A healthcare-oriented forecasting concept that explores structured data flows, prediction support and practical product thinking.",
+    category: "AI/ML / Healthcare",
+    description: "A pharmaceutical inventory forecasting platform that combines classical ML, BiLSTM/GRU deep learning and ensemble methods to predict demand and identify shortage risk.",
     href: "https://github.com/vthish/HVTM_Care_AI-Driven_Drug_Forecasting_System",
-    chips: ["Healthcare", "Forecasting"],
-    stack: ["Python", "Data", "Forecasting"],
+    chips: ["Forecasting", "Deep Learning", "Healthcare"],
+    stack: ["Python", "FastAPI", "TensorFlow/Keras", "Scikit-learn", "XGBoost", "Pandas/NumPy", "HTML/CSS/JS", "Joblib"],
+    Icon: Icons.brain,
   },
   {
     number: "05",
@@ -141,15 +157,17 @@ const projects = [
     href: "https://github.com/vthish/sentry-gas-app",
     chips: ["Safety", "App"],
     stack: ["Flutter", "Mobile", "Monitoring"],
+    Icon: Icons.cloud,
   },
   {
     number: "06",
     title: "Synapse AI Notes",
-    category: "Productivity / Notes",
-    description: "A notes and summarization system created to support faster knowledge capture, cleaner organization and more productive review.",
+    category: "Full-Stack / Productivity",
+    description: "A secure note-taking web app with CRUD, search and subject filtering plus Hugging Face-powered summarization and assisted categorization, backed by Spring Boot and MySQL.",
     href: "https://github.com/vthish/Synapse-AI-Notes-Summarize-System",
-    chips: ["Notes", "Summaries"],
-    stack: ["Next.js", "Node.js", "Productivity"],
+    chips: ["Summarization", "Authentication", "Search"],
+    stack: ["Java 17", "Spring Boot 3", "MySQL", "Spring Security", "Maven", "Tailwind CSS", "Vanilla JS", "Hugging Face API", "Spring Data JPA"],
+    Icon: Icons.layers,
   },
   {
     number: "07",
@@ -159,6 +177,7 @@ const projects = [
     href: "https://github.com/vthish/smart-file-automator",
     chips: ["Automation", "Files"],
     stack: ["Node.js", "Automation", "Utility"],
+    Icon: Icons.code,
   },
 ];
 
@@ -173,25 +192,25 @@ const skillGroups = [
     title: "Web Development",
     summary: "Frontend and full-stack technologies for modern, responsive and scalable web products.",
     Icon: Icons.sparkles,
-    items: ["Next.js", "Node.js", "Nest.js", "HTML", "CSS", "Responsive UI"],
+    items: ["Next.js", "Node.js", "Nest.js", "HTML", "CSS", "Tailwind CSS", "Responsive UI"],
   },
   {
     title: "Backend & Data",
     summary: "Backend frameworks, databases and APIs used for structured, reliable application delivery.",
     Icon: Icons.database,
-    items: ["Spring Boot", "PostgreSQL", "Oracle", "Prisma ORM", "REST APIs"],
+    items: ["Spring Boot", "FastAPI", "PostgreSQL", "MySQL", "Oracle", "Firebase Firestore", "Prisma ORM", "REST APIs"],
   },
   {
     title: "Mobile App Development",
     summary: "Cross-platform and Android-oriented mobile development for useful real-world products.",
     Icon: Icons.phone,
-    items: ["Flutter", "Android Development", "Cross-platform Apps", "Play-ready UI"],
+    items: ["Flutter", "Dart", "Java Android", "Firebase Auth", "Material Design", "MVVM", "Cross-platform Apps"],
   },
   {
     title: "DevOps & Cloud",
     summary: "Delivery-focused tooling that helps move projects from development into release and deployment.",
     Icon: Icons.cloud,
-    items: ["AWS", "Docker", "CI/CD", "GitHub", "GitLab", "Deployment Workflows"],
+    items: ["AWS", "EC2", "S3", "AWS Amplify", "Docker", "Docker Compose", "GitLab CI/CD", "GitHub", "GitLab"],
   },
   {
     title: "Tools & Workflow",
@@ -436,26 +455,41 @@ function Chatbot() {
     if (q.includes("email") || q.includes("mail")) {
       return "You can email Venusha at devthish17@gmail.com.";
     }
+    if (q.includes("auto ledger") || q.includes("driving licence") || q.includes("traffic fine")) {
+      return "Auto Ledger is a full-stack digital driving-licence and traffic-fine platform. Its stack includes Flutter/Dart mobile apps, Next.js 16 + React 19 for the admin portal, NestJS 11 + TypeScript for the REST API, PostgreSQL + Prisma, AWS EC2/Amplify/S3, Docker and GitLab CI/CD.";
+    }
+    if (q.includes("pulseaid") || q.includes("blood donation")) {
+      return "PulseAid is an Android blood-donation management system built with Java, Firebase Firestore, Firebase Auth, Material Design XML components and MVVM architecture.";
+    }
+    if (q.includes("smart expense") || q.includes("expense categor")) {
+      return "Smart Expense AI uses Flutter/Dart on mobile, Firebase Firestore and Firebase Auth, plus a FastAPI/Python ML backend with Scikit-learn, Pandas and Docker.";
+    }
+    if (q.includes("hvtm") || q.includes("drug forecast") || q.includes("pharmaceutical")) {
+      return "HVTM Care is a pharmaceutical forecasting platform using Python, FastAPI, TensorFlow/Keras, Scikit-learn, XGBoost, Pandas/NumPy and a responsive HTML/CSS/JavaScript dashboard.";
+    }
+    if (q.includes("synapse") || q.includes("ai notes") || q.includes("note summar")) {
+      return "Synapse AI Notes uses Java 17, Spring Boot 3, MySQL, Spring Security, Maven, HTML/CSS/Tailwind CSS, Vanilla JavaScript and the Hugging Face Inference API.";
+    }
     if (q.includes("web") || q.includes("website") || q.includes("frontend") || q.includes("backend")) {
-      return "Yes. Venusha builds responsive websites, dashboards and full-stack web applications using technologies such as Next.js, Node.js, Nest.js, Spring Boot, TypeScript, JavaScript, PostgreSQL, Oracle and Prisma ORM.";
+      return "Yes. Venusha builds responsive websites, dashboards and full-stack applications using Next.js, Node.js, Nest.js, Spring Boot, FastAPI, TypeScript/JavaScript and relational or Firebase-backed data layers.";
     }
     if (q.includes("mobile") || q.includes("android") || q.includes("flutter") || q.includes("app")) {
-      return "Venusha develops mobile applications with Flutter and Dart, and also works with Android-focused app development.";
+      return "Venusha develops mobile applications with Flutter/Dart and Java Android, including Firebase authentication/data integration, Material Design and MVVM-style architecture where appropriate.";
     }
     if (q.includes("devops") || q.includes("docker") || q.includes("deploy") || q.includes("aws") || q.includes("ci/cd")) {
-      return "Venusha can help with DevOps-oriented delivery including Docker, AWS, CI/CD workflows, GitHub/GitLab workflows and application deployment.";
+      return "Venusha can help with Docker and Docker Compose, AWS EC2/S3/Amplify, GitLab CI/CD, GitHub/GitLab workflows and application deployment.";
     }
     if (q.includes("service") || q.includes("offer") || q.includes("do you do") || q.includes("what do you do")) {
-      return "Venusha offers web development, mobile app development, backend/API development and DevOps/deployment support. His stack covers modern JavaScript/TypeScript, Java, Flutter, databases and cloud tooling.";
+      return "Venusha offers web development, mobile app development, backend/API development and DevOps/deployment support. His stack covers modern JavaScript/TypeScript, Java, Python, Flutter, databases and cloud tooling.";
     }
     if (q.includes("skill") || q.includes("stack") || q.includes("language") || q.includes("framework")) {
-      return "Core skills include TypeScript, JavaScript, Java, Python, Dart, PHP, C++, C, Next.js, Node.js, Nest.js, Spring Boot, Flutter, Docker, PostgreSQL, Oracle, Prisma ORM, AWS, GitHub/GitLab and CI/CD.";
+      return "Core skills include TypeScript, JavaScript, Java, Python, Dart, PHP, C++, C, Next.js, Node.js, Nest.js, Spring Boot, FastAPI, Flutter, Firebase, Docker, PostgreSQL, MySQL, Oracle, Prisma ORM, AWS, GitHub/GitLab and CI/CD.";
     }
     if (q.includes("ai") || q.includes("artificial intelligence")) {
-      return "Venusha uses modern AI tools as a helpful part of his development workflow for research, debugging, documentation and faster iteration. His portfolio focus stays on software engineering, web, mobile and DevOps delivery.";
+      return "Venusha uses modern AI tools as a helpful part of his development workflow and has also built projects that integrate AI/ML services, while his broader focus remains software engineering across web, mobile and DevOps delivery.";
     }
     if (q.includes("project") || q.includes("github") || q.includes("repository") || q.includes("repo")) {
-      return "This portfolio highlights 7 public GitHub projects covering finance, mobile apps, healthcare forecasting, safety, notes, automation and productivity. Use the Projects section to open each repository.";
+      return "This portfolio highlights 7 public GitHub projects across full-stack web, Android, Flutter, machine learning, healthcare, safety and automation. Open the Projects section to see each project’s verified tech stack and repository.";
     }
     if (q.includes("education") || q.includes("nibm") || q.includes("study")) {
       return "Venusha studied Software Engineering at NIBM Galle, including a Diploma and Higher National Diploma, after completing G.C.E. A/L in the Technology stream.";
@@ -469,7 +503,7 @@ function Chatbot() {
     if (q.includes("location") || q.includes("where") || q.includes("galle")) {
       return "Venusha is based in Galle, Sri Lanka.";
     }
-    return "I can help with Venusha’s services, skills, projects, education, phone number, email, CV or WhatsApp contact. Try asking something like ‘Can he build a mobile app?’";
+    return "I can help with Venusha’s services, skills, project tech stacks, education, phone number, email, CV or WhatsApp contact. Try asking ‘What stack does Auto Ledger use?’";
   };
 
   const send = (text: string) => {
@@ -489,6 +523,13 @@ function Chatbot() {
     send(input);
   };
 
+  const quickQuestions = [
+    { label: "Services", prompt: "What services do you offer?", Icon: Icons.layers },
+    { label: "Mobile apps", prompt: "Can you build a mobile app?", Icon: Icons.phone },
+    { label: "Skills", prompt: "Show skills", Icon: Icons.code },
+    { label: "Contact", prompt: "How can I contact Venusha?", Icon: Icons.message },
+  ];
+
   return (
     <>
       <AnimatePresence>
@@ -502,12 +543,16 @@ function Chatbot() {
             aria-label="VT portfolio assistant"
           >
             <div className="chat-head">
-              <div className="chat-avatar"><Icons.bot size={18}/></div>
-              <div>
+              <div className="chat-avatar"><Icons.bot size={19}/><span className="chat-avatar-orbit" /></div>
+              <div className="chat-head-copy">
                 <strong>VT Assistant</strong>
-                <span><i /> Portfolio assistant</span>
+                <span><i /> Online · Portfolio guide</span>
               </div>
-              <button onClick={() => setOpen(false)} aria-label="Close chatbot"><Icons.close size={18}/></button>
+              <button className="chat-close" onClick={() => setOpen(false)} aria-label="Close chatbot"><Icons.close size={18}/></button>
+            </div>
+            <div className="chat-intro">
+              <div className="chat-intro-icon"><Icons.sparkles size={16}/></div>
+              <div><strong>Ask anything about Venusha</strong><span>Services, skills, projects, education or contact details.</span></div>
             </div>
             <div className="chat-body">
               {messages.map((message, index) => (
@@ -517,18 +562,23 @@ function Chatbot() {
                   animate={{ opacity: 1, y: 0 }}
                   className={`chat-message ${message.from}`}
                 >
-                  {message.text}
+                  {message.from === "bot" && <span className="message-avatar"><Icons.bot size={13}/></span>}
+                  <span>{message.text}</span>
                 </motion.div>
               ))}
               {typing && <div className="typing"><span/><span/><span/></div>}
             </div>
             <div className="quick-actions">
-              {["What services do you offer?", "Can you build a mobile app?", "Contact number", "Email address", "Show skills"].map((item) => (
-                <button key={item} onClick={() => send(item)}>{item}</button>
+              {quickQuestions.map(({ label, prompt, Icon: QuickIcon }) => (
+                <button key={label} onClick={() => send(prompt)}><QuickIcon size={14}/><span>{label}</span></button>
               ))}
             </div>
+            <div className="chat-contact-row">
+              <a href={whatsappHref} target="_blank" rel="noreferrer"><Icons.message size={14}/> WhatsApp</a>
+              <a href="mailto:devthish17@gmail.com"><Icons.mail size={14}/> Email</a>
+            </div>
             <form className="chat-input" onSubmit={submit}>
-              <input value={input} onChange={(e) => setInput(e.target.value)} placeholder="Ask about Venusha..." aria-label="Chat message" />
+              <div className="chat-input-shell"><Icons.message size={15}/><input value={input} onChange={(e) => setInput(e.target.value)} placeholder="Ask about Venusha..." aria-label="Chat message" /></div>
               <button type="submit" aria-label="Send message"><Icons.send size={17}/></button>
             </form>
           </motion.aside>
@@ -772,7 +822,9 @@ export default function Portfolio() {
             <a className="text-link" href="https://github.com/vthish" target="_blank" rel="noreferrer">All GitHub projects <Icons.arrow size={16}/></a>
           </div>
           <div className="projects-list">
-            {projects.map((project, index) => (
+            {projects.map((project, index) => {
+              const ProjectIcon = project.Icon;
+              return (
               <motion.a
                 className="project-card"
                 href={project.href}
@@ -786,18 +838,23 @@ export default function Portfolio() {
                 whileHover={{ y: -8 }}
               >
                 <div className="project-visual">
-                  <div className="project-visual-top"><span>PROJECT {project.number}</span><span>GITHUB / VTHISH</span></div>
+                  <div className="project-visual-top"><span>PROJECT {project.number}</span><span><i /> PUBLIC REPOSITORY</span></div>
                   <div className="project-visual-grid" />
-                  <div className="project-monogram">
-                    {project.title.split(" ").slice(0, 2).map((word) => word[0]).join("")}
+                  <div className="project-orb project-orb-a" /><div className="project-orb project-orb-b" />
+                  <div className="project-console">
+                    <div className="console-head"><span/><span/><span/><small>vthish / {project.title.toLowerCase().replaceAll(" ", "-")}</small></div>
+                    <div className="console-body">
+                      <div className="project-icon-box"><ProjectIcon size={30}/></div>
+                      <div className="console-copy"><small>{project.category}</small><strong>{project.title}</strong></div>
+                    </div>
+                    <div className="console-stack">{project.stack.slice(0, 3).map((item) => <span key={item}>{item}</span>)}</div>
                   </div>
                   <div className="project-code-lines"><span/><span/><span/><span/></div>
-                  <div className="project-orb" />
                 </div>
                 <div className="project-content">
                   <div className="project-meta-row">
                     <small>{project.category}</small>
-                    <span className="project-open"><Icons.github size={15}/> Repository <Icons.arrow size={15}/></span>
+                    <span className="project-open"><Icons.github size={16}/> View repository <Icons.external size={14}/></span>
                   </div>
                   <h3>{project.title}</h3>
                   <p>{project.description}</p>
@@ -806,27 +863,34 @@ export default function Portfolio() {
                   <div className="project-chips">{project.chips.map((chip) => <span key={chip}>{chip}</span>)}</div>
                 </div>
               </motion.a>
-            ))}
+              );
+            })}
           </div>
         </section>
 
         <section className="section education-section" id="education">
           <SectionTitle eyebrow="Education" title="Foundation + continuous learning." text="Formal software engineering study supported by continuous project-based learning." />
           <div className="education-wrap">
-            <div className="timeline-line" />
+            <div className="education-rail"><span/><span/><span/></div>
             {[
-              { year: "2021 / 2022", title: "G.C.E. A/L", place: "Technology", text: "Built the academic foundation that opened the path toward software engineering and product development." },
-              { year: "NIBM — Galle", title: "Diploma in Software Engineering", place: "Software Engineering", text: "Strengthened practical software engineering fundamentals through structured study and hands-on project work." },
-              { year: "NIBM — Galle", title: "Higher National Diploma in Software Engineering", place: "Advanced Software Engineering", text: "Expanded software engineering knowledge with higher-level study, applied development and continuous learning." },
-            ].map((item, i) => (
-              <motion.div className="timeline-item" key={item.title} initial={{ opacity: 0, x: i % 2 ? 24 : -24 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 0.55 }}>
-                <span className="timeline-dot" />
-                <small>{item.year}</small>
-                <h3>{item.title}</h3>
-                <strong>{item.place}</strong>
-                <p>{item.text}</p>
-              </motion.div>
-            ))}
+              { year: "2021 / 2022", index: "01", title: "G.C.E. A/L", place: "Technology Stream", text: "Built the academic foundation that opened the path toward software engineering and product development.", Icon: Icons.graduation },
+              { year: "NIBM · Galle", index: "02", title: "Diploma in Software Engineering", place: "Software Engineering", text: "Strengthened practical software engineering fundamentals through structured study and hands-on project work.", Icon: Icons.certificate },
+              { year: "NIBM · Galle", index: "03", title: "Higher National Diploma in Software Engineering", place: "Advanced Software Engineering", text: "Expanded software engineering knowledge with higher-level study, applied development and continuous learning.", Icon: Icons.layers },
+            ].map((item, i) => {
+              const EducationIcon = item.Icon;
+              return (
+              <motion.article className="education-card" key={item.title} initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-70px" }} transition={{ duration: 0.55, delay: i * 0.08 }}>
+                <div className="education-index">{item.index}</div>
+                <div className="education-icon"><EducationIcon size={24}/></div>
+                <div className="education-content">
+                  <div className="education-meta"><span>{item.year}</span><i>EDUCATION</i></div>
+                  <h3>{item.title}</h3>
+                  <strong>{item.place}</strong>
+                  <p>{item.text}</p>
+                </div>
+              </motion.article>
+              );
+            })}
           </div>
         </section>
 
