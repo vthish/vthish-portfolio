@@ -37,6 +37,9 @@ const Icons = {
   github: (p: IconProps) => (
     <Icon {...p}><path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3.2-.36 6.5-1.57 6.5-7A5.5 5.5 0 0 0 19 3.7 5.1 5.1 0 0 0 18.9.2S17.7-.2 15 1.7a13.4 13.4 0 0 0-7 0C5.3-.2 4.1.2 4.1.2A5.1 5.1 0 0 0 4 3.7a5.5 5.5 0 0 0-1.5 3.8c0 5.4 3.3 6.6 6.5 7A4.8 4.8 0 0 0 8 18v4"/><path d="M8 19c-3 .9-3-1.5-4-2"/></Icon>
   ),
+  gitlab: (p: IconProps) => (
+    <Icon {...p}><path d="M12 21 4.8 13.7l2.3-7.1h1.9L12 1l3 5.6h1.9l2.3 7.1Z"/><path d="M4.8 13.7 12 21l-4.3-7.3M19.2 13.7 12 21l4.3-7.3M7.7 13.7H16.3M7.1 6.6l.6 7.1M16.9 6.6l-.6 7.1"/></Icon>
+  ),
   linkedin: (p: IconProps) => (
     <Icon {...p}><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-4 0v7h-4V9h4v2"/><rect width="4" height="12" x="2" y="9"/><circle cx="4" cy="4" r="2"/></Icon>
   ),
@@ -89,7 +92,7 @@ const Icons = {
 
 const socialLinks = [
   { label: "GitHub", href: "https://github.com/vthish", Icon: Icons.github },
-  { label: "GitLab", href: "https://gitlab.com/vthish-dev", Icon: Icons.code },
+  { label: "GitLab", href: "https://gitlab.com/vthish-dev", Icon: Icons.gitlab },
   { label: "LinkedIn", href: "https://www.linkedin.com/in/venusha-thishan", Icon: Icons.linkedin },
 ];
 
@@ -98,88 +101,101 @@ const projects = [
     number: "01",
     title: "Auto Ledger",
     category: "Automation / Finance",
-    description: "A ledger-focused automation project built around cleaner and faster financial workflows.",
+    description: "A finance-focused automation system designed to simplify ledger workflows, record handling and everyday business tracking.",
     href: "https://github.com/vthish/Auto-Ledger",
     chips: ["Automation", "Finance"],
+    stack: ["Next.js", "Node.js", "PostgreSQL"],
   },
   {
     number: "02",
     title: "PulseAid Android",
     category: "Mobile / Utility",
-    description: "An Android-focused application project exploring mobile-first assistance and practical utility flows.",
+    description: "A mobile-first Android application built around practical utility flows and a clean, accessible user experience.",
     href: "https://github.com/vthish/PulseAid-Android",
     chips: ["Android", "Mobile"],
+    stack: ["Java", "Android", "UI/UX"],
   },
   {
     number: "03",
     title: "Smart Expense Categorizer",
-    category: "AI / Finance",
-    description: "A smart expense workflow centered on categorizing financial records with automation in mind.",
+    category: "Smart Automation / Finance",
+    description: "A smart expense workflow focused on organizing and classifying financial records with better speed, clarity and automation.",
     href: "https://github.com/vthish/Smart-Expense-Categorizer",
-    chips: ["AI", "Expenses"],
+    chips: ["Smart", "Expenses"],
+    stack: ["Python", "Automation", "Finance"],
   },
   {
     number: "04",
     title: "HVTM Care",
-    category: "AI / Healthcare",
-    description: "An AI-driven drug forecasting system project focused on healthcare-oriented prediction workflows.",
+    category: "Forecasting / Healthcare",
+    description: "A healthcare-oriented forecasting concept that explores structured data flows, prediction support and practical product thinking.",
     href: "https://github.com/vthish/HVTM_Care_AI-Driven_Drug_Forecasting_System",
-    chips: ["AI", "Forecasting", "Healthcare"],
+    chips: ["Healthcare", "Forecasting"],
+    stack: ["Python", "Data", "Forecasting"],
   },
   {
     number: "05",
     title: "Sentry Gas App",
     category: "Safety / Application",
-    description: "An application project centered on gas-related monitoring and safety-focused experiences.",
+    description: "A safety-related application concept focused on gas monitoring, alert-oriented experiences and user-friendly interaction patterns.",
     href: "https://github.com/vthish/sentry-gas-app",
     chips: ["Safety", "App"],
+    stack: ["Flutter", "Mobile", "Monitoring"],
   },
   {
     number: "06",
     title: "Synapse AI Notes",
-    category: "AI / Productivity",
-    description: "An AI notes and summarization system designed around faster knowledge capture and review.",
+    category: "Productivity / Notes",
+    description: "A notes and summarization system created to support faster knowledge capture, cleaner organization and more productive review.",
     href: "https://github.com/vthish/Synapse-AI-Notes-Summarize-System",
-    chips: ["AI", "Notes", "Summarization"],
+    chips: ["Notes", "Summaries"],
+    stack: ["Next.js", "Node.js", "Productivity"],
   },
   {
     number: "07",
     title: "Smart File Automator",
     category: "Automation / Productivity",
-    description: "A file-automation project focused on reducing repetitive organization and file-handling work.",
+    description: "A file-automation project built to reduce repetitive manual work and improve how files are organized and processed.",
     href: "https://github.com/vthish/smart-file-automator",
     chips: ["Automation", "Files"],
+    stack: ["Node.js", "Automation", "Utility"],
   },
 ];
 
 const skillGroups = [
   {
     title: "Programming Languages",
+    summary: "Languages I use to build practical applications across web, mobile and backend work.",
     Icon: Icons.code,
     items: ["TypeScript", "JavaScript", "Java", "Python", "Dart", "PHP", "C++", "C"],
   },
   {
     title: "Web Development",
+    summary: "Frontend and full-stack technologies for modern, responsive and scalable web products.",
     Icon: Icons.sparkles,
     items: ["Next.js", "Node.js", "Nest.js", "HTML", "CSS", "Responsive UI"],
   },
   {
     title: "Backend & Data",
+    summary: "Backend frameworks, databases and APIs used for structured, reliable application delivery.",
     Icon: Icons.database,
     items: ["Spring Boot", "PostgreSQL", "Oracle", "Prisma ORM", "REST APIs"],
   },
   {
     title: "Mobile App Development",
+    summary: "Cross-platform and Android-oriented mobile development for useful real-world products.",
     Icon: Icons.phone,
     items: ["Flutter", "Android Development", "Cross-platform Apps", "Play-ready UI"],
   },
   {
     title: "DevOps & Cloud",
+    summary: "Delivery-focused tooling that helps move projects from development into release and deployment.",
     Icon: Icons.cloud,
     items: ["AWS", "Docker", "CI/CD", "GitHub", "GitLab", "Deployment Workflows"],
   },
   {
     title: "Tools & Workflow",
+    summary: "Day-to-day workflow strengths that improve collaboration, speed and product quality.",
     Icon: Icons.brain,
     items: ["Git", "UI Thinking", "Automation", "Problem Solving", "Team Collaboration"],
   },
@@ -644,9 +660,10 @@ export default function Portfolio() {
             </div>
             <div className="hero-socials">
               {socialLinks.map(({ label, href, Icon: SocialIcon }) => (
-                <a key={label} href={href} target="_blank" rel="noreferrer" aria-label={label}><SocialIcon size={18}/></a>
+                <a key={label} href={href} target="_blank" rel="noreferrer" aria-label={label}>
+                  <SocialIcon size={18}/><span>{label}</span>
+                </a>
               ))}
-              <span className="social-line" />
               <small>Galle, Sri Lanka</small>
             </div>
           </motion.div>
@@ -714,7 +731,7 @@ export default function Portfolio() {
             {featuredSkills.map((item) => <span key={item}>{item}</span>)}
           </div>
           <div className="skill-grid">
-            {skillGroups.map(({ title, Icon: SkillIcon, items }, i) => (
+            {skillGroups.map(({ title, summary, Icon: SkillIcon, items }, i) => (
               <motion.article
                 className="skill-card"
                 key={title}
@@ -726,6 +743,7 @@ export default function Portfolio() {
               >
                 <div className="skill-icon"><SkillIcon size={22}/></div>
                 <h3>{title}</h3>
+                <p className="skill-summary">{summary}</p>
                 <div className="skill-tags">{items.map((item) => <span key={item}>{item}</span>)}</div>
               </motion.article>
             ))}
@@ -783,6 +801,8 @@ export default function Portfolio() {
                   </div>
                   <h3>{project.title}</h3>
                   <p>{project.description}</p>
+                  <div className="project-stack-title"><Icons.code size={14}/> Tech stack</div>
+                  <div className="project-tech-stack">{project.stack.map((item) => <span key={item}><i />{item}</span>)}</div>
                   <div className="project-chips">{project.chips.map((chip) => <span key={chip}>{chip}</span>)}</div>
                 </div>
               </motion.a>
@@ -795,9 +815,9 @@ export default function Portfolio() {
           <div className="education-wrap">
             <div className="timeline-line" />
             {[
-              { year: "2021 / 2022", title: "G.C.E. A/L", place: "Technology", text: "Built the academic foundation that led into software engineering." },
-              { year: "NIBM — Galle", title: "Diploma in Software Engineering", place: "Software Engineering", text: "Developed practical software engineering fundamentals and project experience." },
-              { year: "NIBM — Galle", title: "Higher National Diploma in Software Engineering", place: "Advanced Software Engineering", text: "Extended software engineering knowledge through higher-level study and applied development." },
+              { year: "2021 / 2022", title: "G.C.E. A/L", place: "Technology", text: "Built the academic foundation that opened the path toward software engineering and product development." },
+              { year: "NIBM — Galle", title: "Diploma in Software Engineering", place: "Software Engineering", text: "Strengthened practical software engineering fundamentals through structured study and hands-on project work." },
+              { year: "NIBM — Galle", title: "Higher National Diploma in Software Engineering", place: "Advanced Software Engineering", text: "Expanded software engineering knowledge with higher-level study, applied development and continuous learning." },
             ].map((item, i) => (
               <motion.div className="timeline-item" key={item.title} initial={{ opacity: 0, x: i % 2 ? 24 : -24 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 0.55 }}>
                 <span className="timeline-dot" />
@@ -840,12 +860,15 @@ export default function Portfolio() {
         <footer>
           <div className="footer-top">
             <a className="brand footer-brand" href="#top"><span className="brand-mark">VT</span><span className="brand-copy">VENUSHA<br/><small>THISHAN</small></span></a>
-            <div className="footer-links">
-              {socialLinks.map(({ label, href }) => <a key={label} href={href} target="_blank" rel="noreferrer">{label}</a>)}
-              <a href="mailto:devthish17@gmail.com">Email</a>
+            <div className="footer-links footer-icon-links">
+              {socialLinks.map(({ label, href, Icon: SocialIcon }) => (
+                <a key={label} href={href} target="_blank" rel="noreferrer"><SocialIcon size={18}/><span>{label}</span></a>
+              ))}
+              <a href="mailto:devthish17@gmail.com"><Icons.mail size={18}/><span>Email</span></a>
+              <a href={whatsappHref} target="_blank" rel="noreferrer"><Icons.message size={18}/><span>WhatsApp</span></a>
             </div>
           </div>
-          <div className="footer-bottom"><span>© {new Date().getFullYear()} Venusha Thishan.</span><span>Designed to build. Built to evolve.</span></div>
+          <div className="footer-bottom"><span>© {new Date().getFullYear()} Venusha Thishan. All rights reserved.</span><span>Software Engineer · Web · Mobile · DevOps</span></div>
         </footer>
 
         <Chatbot />
