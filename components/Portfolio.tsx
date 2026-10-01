@@ -731,28 +731,16 @@ export default function Portfolio() {
   }, [mouseX, mouseY]);
 
   useEffect(() => {
-    const storageKey = "vthish:intro-seen:v2";
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    let alreadySeen = false;
 
-    try {
-      alreadySeen = window.sessionStorage.getItem(storageKey) === "1";
-    } catch {
-      alreadySeen = false;
-    }
-
-    if (alreadySeen || reducedMotion) {
+    if (reducedMotion) {
       setShowLoader(false);
       return;
     }
 
+    // Show the intro on every full page load/refresh.
     document.documentElement.classList.add("portfolio-loading");
     const timer = window.setTimeout(() => {
-      try {
-        window.sessionStorage.setItem(storageKey, "1");
-      } catch {
-        // Storage can be unavailable in privacy-restricted contexts; the loader still exits normally.
-      }
       document.documentElement.classList.remove("portfolio-loading");
       setShowLoader(false);
     }, 2350);
