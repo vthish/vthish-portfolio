@@ -441,9 +441,9 @@ function InitialLoader() {
   return (
     <motion.div
       className="initial-loader"
-      initial={{ opacity: 1 }}
-      exit={{ opacity: 0, scale: 1.035, filter: "blur(12px)" }}
-      transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
+      initial={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -10 }}
+      transition={{ duration: 0.72, ease: [0.22, 1, 0.36, 1] }}
       role="status"
       aria-live="polite"
       aria-label="Loading Venusha Thishan portfolio"
@@ -722,6 +722,7 @@ export default function Portfolio() {
   const [roleIndex, setRoleIndex] = useState(0);
   const [mounted, setMounted] = useState(false);
   const [showLoader, setShowLoader] = useState(true);
+  const [pageVisible, setPageVisible] = useState(false);
   const mouseX = useMotionValue(-200);
   const mouseY = useMotionValue(-200);
   const smoothX = useSpring(mouseX, { stiffness: 180, damping: 28, mass: 0.25 });
@@ -747,19 +748,27 @@ export default function Portfolio() {
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
     if (reducedMotion) {
+      setPageVisible(true);
       setShowLoader(false);
       return;
     }
 
-    // Show the intro on every full page load/refresh.
+    // Keep the page locked until the loader has fully faded out.
+    // The hero starts settling behind the opaque loader first, which avoids
+    // the visible jump that can happen when both layers start at once.
     document.documentElement.classList.add("portfolio-loading");
-    const timer = window.setTimeout(() => {
-      document.documentElement.classList.remove("portfolio-loading");
+
+    const revealTimer = window.setTimeout(() => {
+      setPageVisible(true);
+    }, 2180);
+
+    const exitTimer = window.setTimeout(() => {
       setShowLoader(false);
-    }, 2750);
+    }, 2580);
 
     return () => {
-      window.clearTimeout(timer);
+      window.clearTimeout(revealTimer);
+      window.clearTimeout(exitTimer);
       document.documentElement.classList.remove("portfolio-loading");
     };
   }, []);
@@ -772,7 +781,11 @@ export default function Portfolio() {
   return (
     <MotionConfig reducedMotion="user">
       <main className="site-shell">
-        <AnimatePresence>{showLoader ? <InitialLoader /> : null}</AnimatePresence>
+        <AnimatePresence
+          onExitComplete={() => document.documentElement.classList.remove("portfolio-loading")}
+        >
+          {showLoader ? <InitialLoader /> : null}
+        </AnimatePresence>
         <motion.div className="scroll-progress" style={{ scaleX }} />
         {mounted && (
           <motion.div className="cursor-glow" style={{ x: smoothX, y: smoothY }} aria-hidden="true" />
@@ -785,8 +798,8 @@ export default function Portfolio() {
         <motion.header
           className="nav-wrap"
           initial={false}
-          animate={showLoader ? { opacity: 0 } : { opacity: 1 }}
-          transition={{ duration: 0.62, delay: showLoader ? 0 : 0.12, ease: [0.2, 0.8, 0.2, 1] }}
+          animate={pageVisible ? { opacity: 1 } : { opacity: 0 }}
+          transition={{ duration: 0.72, ease: [0.22, 1, 0.36, 1] }}
         >
           <a className="brand" href="#top" aria-label="Venusha Thishan home">
             <span className="brand-mark">VT</span>
@@ -834,8 +847,8 @@ export default function Portfolio() {
           <motion.div
             className="hero-copy"
             initial={false}
-            animate={showLoader ? { opacity: 0, y: 34 } : { opacity: 1, y: 0 }}
-            transition={{ duration: 0.82, delay: showLoader ? 0 : 0.2, ease: [0.2, 0.8, 0.2, 1] }}
+            animate={pageVisible ? { opacity: 1, y: 0 } : { opacity: 0, y: 18 }}
+            transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
           >
             <div className="status-pill"><span /> OPEN TO SOFTWARE OPPORTUNITIES</div>
             <p className="hero-kicker">Hello, I’m</p>
@@ -872,8 +885,8 @@ export default function Portfolio() {
           <motion.div
             className="hero-visual"
             initial={false}
-            animate={showLoader ? { opacity: 0, scale: 0.94, x: 34 } : { opacity: 1, scale: 1, x: 0 }}
-            transition={{ duration: 0.95, delay: showLoader ? 0 : 0.28, ease: [0.2, 0.8, 0.2, 1] }}
+            animate={pageVisible ? { opacity: 1, scale: 1, x: 0 } : { opacity: 0, scale: 0.975, x: 16 }}
+            transition={{ duration: 1.0, ease: [0.22, 1, 0.36, 1] }}
           >
             <div className="portrait-orbit orbit-one" />
             <div className="portrait-orbit orbit-two" />

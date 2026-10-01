@@ -19,7 +19,7 @@
 }
 
 * { box-sizing: border-box; }
-html { scroll-behavior: smooth; background: var(--bg); }
+html { scroll-behavior: smooth; background: var(--bg); scrollbar-gutter: stable; }
 body {
   margin: 0;
   background: var(--bg);
@@ -74,6 +74,9 @@ html.portfolio-loading body { overflow: hidden; }
   overflow: hidden;
   background: #04060b;
   isolation: isolate;
+  will-change: opacity, transform;
+  transform: translateZ(0);
+  backface-visibility: hidden;
 }
 .loader-vignette {
   position: absolute;
