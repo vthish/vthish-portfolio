@@ -164,6 +164,39 @@ npm start
 
 ---
 
+## 📊 Private Portfolio Analytics
+
+The portfolio includes a private, password-protected analytics dashboard at:
+
+```text
+https://vthish.dev/admin/analytics
+```
+
+The public site does **not** display a view counter. Page views are written server-side to **Netlify Blobs**. The tracker stores a hashed browser identifier, page path, coarse device/browser type and Netlify country metadata. It does not store IP addresses. Detectable bots are ignored.
+
+### Netlify environment variables
+
+Add these values in **Netlify → Project configuration → Environment variables**:
+
+```text
+ANALYTICS_ADMIN_PASSWORD=<a long private password>
+RESEND_API_KEY=<your Resend API key>
+ANALYTICS_EMAIL_TO=devthish17@gmail.com
+ANALYTICS_EMAIL_FROM=Portfolio Analytics <analytics@vthish.dev>
+```
+
+For the monthly email, verify `vthish.dev` as a sending domain in Resend and create the `RESEND_API_KEY`. Keep all secrets in Netlify environment variables; do not commit them.
+
+### Monthly email report
+
+`netlify/functions/analytics-monthly-email.mts` is a Netlify Scheduled Function. It runs on the **first day of each month at 00:05 UTC** and emails the previous month's page views, unique-browser count, top pages and top countries to `devthish17@gmail.com`.
+
+You can test it after deployment from **Netlify → Functions → analytics-monthly-email → Run now**.
+
+For local testing of Netlify Functions and Blobs, use Netlify Dev instead of plain `next dev` when you need the analytics backend.
+
+---
+
 ## 🌐 Deployment
 
 The portfolio is deployed with **Netlify** and connected to the `main` branch of this GitHub repository.

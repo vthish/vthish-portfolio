@@ -436,69 +436,88 @@ function NetworkBackground() {
 }
 
 function InitialLoader() {
-  const bootLines = [
-    ["$", "booting vthish.dev"],
-    [">", "loading interface modules"],
-    [">", "mounting projects + experience"],
-    ["✓", "portfolio ready"],
-  ];
+  const floatingCode = ["</>", "{ }", "01", "=>"];
 
   return (
     <motion.div
       className="initial-loader"
       initial={{ opacity: 1 }}
-      exit={{ opacity: 0, scale: 1.015 }}
-      transition={{ duration: 0.58, ease: [0.4, 0, 0.2, 1] }}
+      exit={{ opacity: 0, filter: "blur(8px)", scale: 1.02 }}
+      transition={{ duration: 0.5, ease: [0.4, 0, 0.2, 1] }}
       role="status"
       aria-live="polite"
       aria-label="Loading Venusha Thishan portfolio"
     >
-      <div className="loader-grid" aria-hidden="true" />
-      <motion.div
-        className="loader-shell"
-        initial={{ opacity: 0, y: 18, scale: 0.985 }}
-        animate={{ opacity: 1, y: 0, scale: 1 }}
-        transition={{ duration: 0.42, ease: [0.2, 0.8, 0.2, 1] }}
-      >
-        <div className="loader-head">
-          <span className="loader-window-dots"><i/><i/><i/></span>
-          <code>vthish.dev / init</code>
-          <span className="loader-live"><i/> LIVE</span>
-        </div>
-        <div className="loader-body">
-          <motion.div
-            className="loader-logo"
-            initial={{ rotateX: 70, rotateZ: -8, opacity: 0 }}
-            animate={{ rotateX: 0, rotateZ: 0, opacity: 1 }}
-            transition={{ duration: 0.65, delay: 0.15, ease: [0.2, 0.8, 0.2, 1] }}
-          >
-            <span>VT</span>
-          </motion.div>
-          <div className="loader-copy">
-            <span className="loader-kicker">SOFTWARE ENGINEER / PORTFOLIO</span>
-            <strong>Compiling the experience.</strong>
-            <div className="loader-terminal" aria-hidden="true">
-              {bootLines.map(([prompt, line], index) => (
-                <motion.div
-                  key={line}
-                  initial={{ opacity: 0, x: -8 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.28, delay: 0.35 + index * 0.38 }}
-                >
-                  <span>{prompt}</span><code>{line}</code>
-                </motion.div>
-              ))}
-            </div>
-          </div>
-        </div>
-        <div className="loader-progress" aria-hidden="true">
+      <div className="loader-aurora" aria-hidden="true" />
+      <div className="loader-stars" aria-hidden="true">
+        {floatingCode.map((code, index) => (
           <motion.span
-            initial={{ scaleX: 0 }}
-            animate={{ scaleX: 1 }}
-            transition={{ duration: 2.25, ease: [0.22, 1, 0.36, 1] }}
-          />
+            key={code}
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: [0, 0.42, 0.18], y: [12, 0, -8] }}
+            transition={{ duration: 1.7, delay: 0.18 + index * 0.16, ease: "easeOut" }}
+          >
+            {code}
+          </motion.span>
+        ))}
+      </div>
+
+      <motion.div
+        className="loader-core"
+        initial={{ opacity: 0, scale: 0.92 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.48, ease: [0.2, 0.8, 0.2, 1] }}
+      >
+        <div className="loader-orbit" aria-hidden="true">
+          <i className="loader-ring ring-a" />
+          <i className="loader-ring ring-b" />
+          <i className="loader-ring-dot" />
+          <motion.div
+            className="loader-monogram"
+            initial={{ opacity: 0, scale: 0.72, rotate: -8 }}
+            animate={{ opacity: 1, scale: 1, rotate: 0 }}
+            transition={{ duration: 0.58, delay: 0.18, type: "spring", stiffness: 180, damping: 17 }}
+          >
+            <span>&lt;</span><strong>VT</strong><span>/&gt;</span>
+          </motion.div>
         </div>
-        <div className="loader-foot"><span>INITIALIZING UI</span><span>01 / READY</span></div>
+
+        <motion.div
+          className="loader-title"
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.42, delay: 0.42 }}
+        >
+          <span>VTHISH.DEV</span>
+          <strong>Building ideas into software.</strong>
+        </motion.div>
+
+        <motion.div
+          className="loader-progress-wrap"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.3, delay: 0.58 }}
+          aria-hidden="true"
+        >
+          <div className="loader-progress-copy"><span>INITIALIZING PORTFOLIO</span><span>READY</span></div>
+          <div className="loader-progress-line">
+            <motion.i
+              initial={{ scaleX: 0 }}
+              animate={{ scaleX: 1 }}
+              transition={{ duration: 1.45, delay: 0.58, ease: [0.22, 1, 0.36, 1] }}
+            />
+          </div>
+        </motion.div>
+
+        <motion.div
+          className="loader-tech"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.36, delay: 0.82 }}
+          aria-hidden="true"
+        >
+          <span>WEB</span><i/><span>MOBILE</span><i/><span>DEVOPS</span>
+        </motion.div>
       </motion.div>
     </motion.div>
   );
@@ -712,7 +731,7 @@ export default function Portfolio() {
   }, [mouseX, mouseY]);
 
   useEffect(() => {
-    const storageKey = "vthish:intro-seen:v1";
+    const storageKey = "vthish:intro-seen:v2";
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     let alreadySeen = false;
 
@@ -736,7 +755,7 @@ export default function Portfolio() {
       }
       document.documentElement.classList.remove("portfolio-loading");
       setShowLoader(false);
-    }, 2600);
+    }, 2350);
 
     return () => {
       window.clearTimeout(timer);
