@@ -436,87 +436,100 @@ function NetworkBackground() {
 }
 
 function InitialLoader() {
-  const floatingCode = ["</>", "{ }", "01", "=>"];
+  const bootSteps = ["core", "interface", "experience"];
 
   return (
     <motion.div
       className="initial-loader"
       initial={{ opacity: 1 }}
-      exit={{ opacity: 0, filter: "blur(8px)", scale: 1.02 }}
-      transition={{ duration: 0.5, ease: [0.4, 0, 0.2, 1] }}
+      exit={{ opacity: 0, scale: 1.035, filter: "blur(12px)" }}
+      transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
       role="status"
       aria-live="polite"
       aria-label="Loading Venusha Thishan portfolio"
     >
-      <div className="loader-aurora" aria-hidden="true" />
-      <div className="loader-stars" aria-hidden="true">
-        {floatingCode.map((code, index) => (
-          <motion.span
-            key={code}
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: [0, 0.42, 0.18], y: [12, 0, -8] }}
-            transition={{ duration: 1.7, delay: 0.18 + index * 0.16, ease: "easeOut" }}
-          >
-            {code}
-          </motion.span>
-        ))}
-      </div>
+      <div className="loader-vignette" aria-hidden="true" />
+      <div className="loader-grid" aria-hidden="true" />
+      <div className="loader-glow loader-glow-a" aria-hidden="true" />
+      <div className="loader-glow loader-glow-b" aria-hidden="true" />
 
       <motion.div
-        className="loader-core"
-        initial={{ opacity: 0, scale: 0.92 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.48, ease: [0.2, 0.8, 0.2, 1] }}
+        className="loader-stage"
+        initial={{ opacity: 0, y: 16, scale: 0.985 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
       >
-        <div className="loader-orbit" aria-hidden="true">
-          <i className="loader-ring ring-a" />
-          <i className="loader-ring ring-b" />
-          <i className="loader-ring-dot" />
+        <div className="loader-topline" aria-hidden="true">
+          <span><i /> SYSTEM ONLINE</span>
+          <span>VTHISH.DEV / BOOT</span>
+        </div>
+
+        <div className="loader-symbol" aria-hidden="true">
+          <span className="loader-arc arc-one" />
+          <span className="loader-arc arc-two" />
+          <span className="loader-scan" />
           <motion.div
-            className="loader-monogram"
-            initial={{ opacity: 0, scale: 0.72, rotate: -8 }}
+            className="loader-vt"
+            initial={{ opacity: 0, scale: 0.72, rotate: -5 }}
             animate={{ opacity: 1, scale: 1, rotate: 0 }}
-            transition={{ duration: 0.58, delay: 0.18, type: "spring", stiffness: 180, damping: 17 }}
+            transition={{ delay: 0.16, duration: 0.62, type: "spring", stiffness: 170, damping: 18 }}
           >
             <span>&lt;</span><strong>VT</strong><span>/&gt;</span>
           </motion.div>
         </div>
 
         <motion.div
-          className="loader-title"
+          className="loader-copy"
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.42, delay: 0.42 }}
+          transition={{ duration: 0.42, delay: 0.38 }}
         >
-          <span>VTHISH.DEV</span>
-          <strong>Building ideas into software.</strong>
+          <span>VENUSHA THISHAN · SOFTWARE ENGINEER</span>
+          <strong>Crafting the experience.</strong>
+        </motion.div>
+
+        <motion.div
+          className="loader-terminal"
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.38, delay: 0.6 }}
+          aria-hidden="true"
+        >
+          <div className="loader-terminal-head">
+            <span className="terminal-dots"><i /><i /><i /></span>
+            <span>portfolio.init</span>
+            <span>01</span>
+          </div>
+          <div className="loader-command"><b>›</b><code> initialize --portfolio</code><i className="loader-caret" /></div>
+          <div className="loader-steps">
+            {bootSteps.map((step, index) => (
+              <motion.span
+                key={step}
+                initial={{ opacity: 0, x: -8 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.24, delay: 0.92 + index * 0.28 }}
+              >
+                <i>✓</i>{step}
+              </motion.span>
+            ))}
+          </div>
         </motion.div>
 
         <motion.div
           className="loader-progress-wrap"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ duration: 0.3, delay: 0.58 }}
+          transition={{ duration: 0.25, delay: 0.72 }}
           aria-hidden="true"
         >
-          <div className="loader-progress-copy"><span>INITIALIZING PORTFOLIO</span><span>READY</span></div>
+          <div className="loader-progress-copy"><span>LOADING EXPERIENCE</span><span>READY</span></div>
           <div className="loader-progress-line">
             <motion.i
               initial={{ scaleX: 0 }}
               animate={{ scaleX: 1 }}
-              transition={{ duration: 1.45, delay: 0.58, ease: [0.22, 1, 0.36, 1] }}
+              transition={{ duration: 1.62, delay: 0.72, ease: [0.22, 1, 0.36, 1] }}
             />
           </div>
-        </motion.div>
-
-        <motion.div
-          className="loader-tech"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.36, delay: 0.82 }}
-          aria-hidden="true"
-        >
-          <span>WEB</span><i/><span>MOBILE</span><i/><span>DEVOPS</span>
         </motion.div>
       </motion.div>
     </motion.div>
@@ -743,7 +756,7 @@ export default function Portfolio() {
     const timer = window.setTimeout(() => {
       document.documentElement.classList.remove("portfolio-loading");
       setShowLoader(false);
-    }, 2350);
+    }, 2750);
 
     return () => {
       window.clearTimeout(timer);
