@@ -435,6 +435,75 @@ function NetworkBackground() {
   );
 }
 
+function InitialLoader() {
+  const bootLines = [
+    ["$", "booting vthish.dev"],
+    [">", "loading interface modules"],
+    [">", "mounting projects + experience"],
+    ["✓", "portfolio ready"],
+  ];
+
+  return (
+    <motion.div
+      className="initial-loader"
+      initial={{ opacity: 1 }}
+      exit={{ opacity: 0, scale: 1.015 }}
+      transition={{ duration: 0.58, ease: [0.4, 0, 0.2, 1] }}
+      role="status"
+      aria-live="polite"
+      aria-label="Loading Venusha Thishan portfolio"
+    >
+      <div className="loader-grid" aria-hidden="true" />
+      <motion.div
+        className="loader-shell"
+        initial={{ opacity: 0, y: 18, scale: 0.985 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        transition={{ duration: 0.42, ease: [0.2, 0.8, 0.2, 1] }}
+      >
+        <div className="loader-head">
+          <span className="loader-window-dots"><i/><i/><i/></span>
+          <code>vthish.dev / init</code>
+          <span className="loader-live"><i/> LIVE</span>
+        </div>
+        <div className="loader-body">
+          <motion.div
+            className="loader-logo"
+            initial={{ rotateX: 70, rotateZ: -8, opacity: 0 }}
+            animate={{ rotateX: 0, rotateZ: 0, opacity: 1 }}
+            transition={{ duration: 0.65, delay: 0.15, ease: [0.2, 0.8, 0.2, 1] }}
+          >
+            <span>VT</span>
+          </motion.div>
+          <div className="loader-copy">
+            <span className="loader-kicker">SOFTWARE ENGINEER / PORTFOLIO</span>
+            <strong>Compiling the experience.</strong>
+            <div className="loader-terminal" aria-hidden="true">
+              {bootLines.map(([prompt, line], index) => (
+                <motion.div
+                  key={line}
+                  initial={{ opacity: 0, x: -8 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.28, delay: 0.35 + index * 0.38 }}
+                >
+                  <span>{prompt}</span><code>{line}</code>
+                </motion.div>
+              ))}
+            </div>
+          </div>
+        </div>
+        <div className="loader-progress" aria-hidden="true">
+          <motion.span
+            initial={{ scaleX: 0 }}
+            animate={{ scaleX: 1 }}
+            transition={{ duration: 2.25, ease: [0.22, 1, 0.36, 1] }}
+          />
+        </div>
+        <div className="loader-foot"><span>INITIALIZING UI</span><span>01 / READY</span></div>
+      </motion.div>
+    </motion.div>
+  );
+}
+
 function Chatbot() {
   const [open, setOpen] = useState(false);
   const [typing, setTyping] = useState(false);
@@ -620,6 +689,7 @@ export default function Portfolio() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [roleIndex, setRoleIndex] = useState(0);
   const [mounted, setMounted] = useState(false);
+  const [showLoader, setShowLoader] = useState(true);
   const mouseX = useMotionValue(-200);
   const mouseY = useMotionValue(-200);
   const smoothX = useSpring(mouseX, { stiffness: 180, damping: 28, mass: 0.25 });
@@ -641,6 +711,39 @@ export default function Portfolio() {
     };
   }, [mouseX, mouseY]);
 
+  useEffect(() => {
+    const storageKey = "vthish:intro-seen:v1";
+    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    let alreadySeen = false;
+
+    try {
+      alreadySeen = window.sessionStorage.getItem(storageKey) === "1";
+    } catch {
+      alreadySeen = false;
+    }
+
+    if (alreadySeen || reducedMotion) {
+      setShowLoader(false);
+      return;
+    }
+
+    document.documentElement.classList.add("portfolio-loading");
+    const timer = window.setTimeout(() => {
+      try {
+        window.sessionStorage.setItem(storageKey, "1");
+      } catch {
+        // Storage can be unavailable in privacy-restricted contexts; the loader still exits normally.
+      }
+      document.documentElement.classList.remove("portfolio-loading");
+      setShowLoader(false);
+    }, 2600);
+
+    return () => {
+      window.clearTimeout(timer);
+      document.documentElement.classList.remove("portfolio-loading");
+    };
+  }, []);
+
   const marquee = useMemo(
     () => ["TypeScript", "Next.js", "Node.js", "Nest.js", "Java", "Spring Boot", "Flutter", "Docker", "PostgreSQL", "AWS", "CI/CD"],
     []
@@ -649,6 +752,7 @@ export default function Portfolio() {
   return (
     <MotionConfig reducedMotion="user">
       <main className="site-shell">
+        <AnimatePresence>{showLoader ? <InitialLoader /> : null}</AnimatePresence>
         <motion.div className="scroll-progress" style={{ scaleX }} />
         {mounted && (
           <motion.div className="cursor-glow" style={{ x: smoothX, y: smoothY }} aria-hidden="true" />
@@ -658,7 +762,12 @@ export default function Portfolio() {
         <div className="ambient ambient-one" aria-hidden="true" />
         <div className="ambient ambient-two" aria-hidden="true" />
 
-        <header className="nav-wrap">
+        <motion.header
+          className="nav-wrap"
+          initial={false}
+          animate={showLoader ? { opacity: 0 } : { opacity: 1 }}
+          transition={{ duration: 0.62, delay: showLoader ? 0 : 0.12, ease: [0.2, 0.8, 0.2, 1] }}
+        >
           <a className="brand" href="#top" aria-label="Venusha Thishan home">
             <span className="brand-mark">VT</span>
             <span className="brand-copy">VENUSHA<br/><small>THISHAN</small></span>
@@ -677,7 +786,7 @@ export default function Portfolio() {
             </MagneticLink>
             <button className="menu-button" onClick={() => setMenuOpen(true)} aria-label="Open menu"><Icons.menu/></button>
           </div>
-        </header>
+        </motion.header>
 
         <AnimatePresence>
           {menuOpen && (
@@ -702,7 +811,12 @@ export default function Portfolio() {
 
         <section className="hero" id="top">
           <div className="hero-grid" aria-hidden="true" />
-          <motion.div className="hero-copy" initial={{ opacity: 0, y: 28 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, ease: [0.2, 0.8, 0.2, 1] }}>
+          <motion.div
+            className="hero-copy"
+            initial={false}
+            animate={showLoader ? { opacity: 0, y: 34 } : { opacity: 1, y: 0 }}
+            transition={{ duration: 0.82, delay: showLoader ? 0 : 0.2, ease: [0.2, 0.8, 0.2, 1] }}
+          >
             <div className="status-pill"><span /> OPEN TO SOFTWARE OPPORTUNITIES</div>
             <p className="hero-kicker">Hello, I’m</p>
             <h1>Venusha<br/><span>Thishan.</span></h1>
@@ -735,7 +849,12 @@ export default function Portfolio() {
             </div>
           </motion.div>
 
-          <motion.div className="hero-visual" initial={{ opacity: 0, scale: 0.92, x: 30 }} animate={{ opacity: 1, scale: 1, x: 0 }} transition={{ duration: 1, delay: 0.12 }}>
+          <motion.div
+            className="hero-visual"
+            initial={false}
+            animate={showLoader ? { opacity: 0, scale: 0.94, x: 34 } : { opacity: 1, scale: 1, x: 0 }}
+            transition={{ duration: 0.95, delay: showLoader ? 0 : 0.28, ease: [0.2, 0.8, 0.2, 1] }}
+          >
             <div className="portrait-orbit orbit-one" />
             <div className="portrait-orbit orbit-two" />
             <motion.div className="portrait-card" whileHover={{ rotate: 0, y: -6 }} transition={{ type: "spring", stiffness: 180, damping: 18 }}>
