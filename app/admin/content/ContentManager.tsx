@@ -16,6 +16,7 @@ import {
   type SkillGroup,
   type SocialLink,
 } from "@/lib/portfolio-content";
+import { resolveVideoSource } from "@/lib/video";
 import styles from "./content.module.css";
 
 const iconLabels: Record<ContentIconKey, string> = {
@@ -54,10 +55,10 @@ function newEducation(): EducationItem {
   return { id: `education-${stamp()}`, period: "Year / Institution", title: "New Education", place: "Program / Stream", text: "Describe this education milestone.", icon: "graduation" };
 }
 function newCertificate(): CertificateItem {
-  return { id: `certificate-${stamp()}`, title: "New Certificate", issuer: "Issuer", date: "Year", description: "Describe what this certificate validates.", credentialUrl: "", imageUrl: "" };
+  return { id: `certificate-${stamp()}`, title: "New Certificate", issuer: "Issuer", date: "Year", description: "Describe what this certificate validates.", credentialUrl: "", imageUrl: "", imageUrls: [] };
 }
 function newExperience(): ExperienceItem {
-  return { id: `experience-${stamp()}`, role: "Role title", company: "Company", period: "Start – End", location: "Location", description: "Describe your role and impact.", highlights: ["Key responsibility"], imageUrl: "" };
+  return { id: `experience-${stamp()}`, role: "Role title", company: "Company", period: "Start – End", location: "Location", description: "Describe your role and impact.", highlights: ["Key responsibility"], imageUrl: "", imageUrls: [] };
 }
 function newSocial(): SocialLink {
   return { id: `social-${stamp()}`, label: "Profile", href: "https://", icon: "link" };
@@ -114,6 +115,7 @@ function MediaField({ label, value, onChange, hint }: { label: string; value?: s
 function ProjectVideoField({ value, onChange }: { value?: string; onChange: (url: string) => void }) {
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
+  const source = resolveVideoSource(value);
 
   async function upload(file?: File) {
     if (!file) return;
@@ -132,27 +134,29 @@ function ProjectVideoField({ value, onChange }: { value?: string; onChange: (url
   return <div className={`${styles.field} ${styles.full}`}>
     <span>Project demo video <small className={styles.optionalLabel}>optional</small></span>
     <div className={styles.mediaRow}>
-      <input value={value || ""} onChange={(e) => onChange(e.target.value)} placeholder="Upload a short MP4/WebM or paste a direct video URL" />
-      <label className={styles.uploadButton}>{uploading ? "Uploading…" : value ? "Replace video" : "Upload video"}<input type="file" accept="video/mp4,video/webm" disabled={uploading} onChange={(e) => { void upload(e.target.files?.[0]); e.currentTarget.value = ""; }}/></label>
+      <input value={value || ""} onChange={(e) => onChange(e.target.value)} placeholder="YouTube, Vimeo, Loom, Drive, TikTok, direct MP4/WebM, or another video link" />
+      <label className={styles.uploadButton}>{uploading ? "Uploading…" : value ? "Replace upload" : "Upload video"}<input type="file" accept="video/mp4,video/webm" disabled={uploading} onChange={(e) => { void upload(e.target.files?.[0]); e.currentTarget.value = ""; }}/></label>
       {value ? <button className={styles.removeMedia} type="button" onClick={() => onChange("")}>Remove</button> : null}
     </div>
-    <small>MP4 or WebM · max 4 MB. If added, the demo video appears as the first media item before screenshots.</small>
+    <small>Paste a YouTube / YouTube Shorts / Vimeo / Loom / Google Drive / Dailymotion / Streamable / TikTok link, a direct MP4/WebM URL, or upload an MP4/WebM (max 4 MB). Unknown providers are kept as a safe “Watch demo” link.</small>
     {error ? <small className={styles.errorInline}>{error}</small> : null}
-    {value ? <div className={`${styles.mediaPreview} ${styles.videoPreview}`}><video src={value} controls muted playsInline preload="metadata" /></div> : null}
+    {source ? <div className={`${styles.mediaPreview} ${styles.videoPreview}`}>
+      {source.kind === "direct" ? <video src={source.src} controls muted playsInline preload="metadata" /> : source.kind === "embed" ? <iframe src={source.src} title={`${source.provider} preview`} allow="autoplay; encrypted-media; picture-in-picture" allowFullScreen /> : <a href={source.src} target="_blank" rel="noreferrer">Open {source.provider} video ↗</a>}
+    </div> : null}
   </div>;
 }
 
 
-function ProjectMediaGallery({ values, legacyValue, onChange }: { values?: string[]; legacyValue?: string; onChange: (urls: string[]) => void }) {
+function MediaGalleryField({ label, values, legacyValue, onChange, max = 10, hint, emptyText }: { label: string; values?: string[]; legacyValue?: string; onChange: (urls: string[]) => void; max?: number; hint?: string; emptyText?: string }) {
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
-  const current = (values && values.length ? values : legacyValue ? [legacyValue] : []).filter(Boolean).slice(0, 8);
+  const current = (values && values.length ? values : legacyValue ? [legacyValue] : []).filter(Boolean).slice(0, max);
 
   async function upload(files?: FileList | null) {
     if (!files?.length) return;
     setUploading(true); setError("");
     try {
-      const room = Math.max(0, 8 - current.length);
+      const room = Math.max(0, max - current.length);
       const selected = Array.from(files).slice(0, room);
       const uploaded: string[] = [];
       for (const file of selected) {
@@ -162,7 +166,7 @@ function ProjectMediaGallery({ values, legacyValue, onChange }: { values?: strin
         if (!response.ok) throw new Error(payload.error || `Upload failed for ${file.name}.`);
         if (payload.url) uploaded.push(payload.url);
       }
-      onChange([...current, ...uploaded].slice(0, 8));
+      onChange([...current, ...uploaded].slice(0, max));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Upload failed.");
     } finally { setUploading(false); }
@@ -178,18 +182,20 @@ function ProjectMediaGallery({ values, legacyValue, onChange }: { values?: strin
   function remove(index: number) { onChange(current.filter((_, i) => i !== index)); }
 
   return <div className={`${styles.field} ${styles.full}`}>
-    <span>Project screenshots</span>
+    <span>{label}</span>
     <div className={styles.galleryToolbar}>
-      <label className={styles.uploadButton}>{uploading ? "Uploading…" : current.length ? "Add more images" : "Upload images"}<input type="file" multiple accept="image/png,image/jpeg,image/webp" disabled={uploading || current.length >= 8} onChange={(e) => { void upload(e.target.files); e.currentTarget.value = ""; }}/></label>
-      <small>{current.length}/8 images · JPG/PNG/WebP · max 4 MB each. First image is the cover.</small>
+      <label className={styles.uploadButton}>{uploading ? "Uploading…" : current.length ? "Add more images" : "Upload images"}<input type="file" multiple accept="image/png,image/jpeg,image/webp" disabled={uploading || current.length >= max} onChange={(e) => { void upload(e.target.files); e.currentTarget.value = ""; }}/></label>
+      <small>{current.length}/{max} images · JPG/PNG/WebP · max 4 MB each. First image is shown first.</small>
     </div>
+    {hint ? <small>{hint}</small> : null}
     {error ? <small className={styles.errorInline}>{error}</small> : null}
     {current.length ? <div className={styles.projectGalleryAdmin}>{current.map((url, index) => <div className={styles.projectGalleryItem} key={`${url}-${index}`}>
-      <div className={styles.projectGalleryImage}><img src={url} alt={`Project screenshot ${index + 1}`}/>{index === 0 ? <span>Cover</span> : null}</div>
+      <div className={styles.projectGalleryImage}><img src={url} alt={`${label} ${index + 1}`}/>{index === 0 ? <span>First</span> : null}</div>
       <div className={styles.projectGalleryActions}><button type="button" disabled={index === 0} onClick={() => move(index, -1)}>←</button><button type="button" disabled={index === current.length - 1} onClick={() => move(index, 1)}>→</button><button type="button" onClick={() => remove(index)}>Remove</button></div>
-    </div>)}</div> : <div className={styles.emptyState}>No screenshots yet. The portfolio keeps the current default developer-console graphic until you upload one.</div>}
+    </div>)}</div> : <div className={styles.emptyState}>{emptyText || "No images yet."}</div>}
   </div>;
 }
+
 
 function OrderButtons({ index, total, onMove, onDelete, label = "item" }: { index: number; total: number; onMove: (direction: -1 | 1) => void; onDelete: () => void; label?: string }) {
   return <div className={styles.orderButtons}><button type="button" disabled={index === 0} onClick={() => onMove(-1)} aria-label={`Move ${label} up`}>↑</button><button type="button" disabled={index === total - 1} onClick={() => onMove(1)} aria-label={`Move ${label} down`}>↓</button><button className={styles.deleteButton} type="button" onClick={onDelete}>Delete</button></div>;
@@ -309,7 +315,7 @@ export default function ContentManager() {
         <Field label="Hero description" full><textarea rows={3} value={content.hero.text} onChange={(e) => setContent((c) => ({ ...c, hero: { ...c.hero, text: e.target.value } }))}/></Field>
         <Field label="Focus areas"><input value={content.hero.focusAreas} onChange={(e) => setContent((c) => ({ ...c, hero: { ...c.hero, focusAreas: e.target.value } }))}/></Field>
         <Field label="Core stack"><input value={content.hero.coreStack} onChange={(e) => setContent((c) => ({ ...c, hero: { ...c.hero, coreStack: e.target.value } }))}/></Field>
-        <MediaField label="Hero portrait" value={content.hero.profileImageUrl} onChange={(url) => setContent((c) => ({ ...c, hero: { ...c.hero, profileImageUrl: url } }))}/>
+        <MediaGalleryField label="Hero portraits" values={content.hero.profileImageUrls} legacyValue={content.hero.profileImageUrl} onChange={(urls) => setContent((c) => ({ ...c, hero: { ...c.hero, profileImageUrls: urls, profileImageUrl: urls[0] || c.hero.profileImageUrl } }))} max={10} hint="Upload multiple portraits. They rotate smoothly in the same hero frame; with one image the current design stays unchanged."/>
         <Field label="Tech marquee · comma separated" full><input value={toCsv(content.marquee)} onChange={(e) => setContent((c) => ({ ...c, marquee: fromCsv(e.target.value) }))}/></Field>
       </div>
     </section>
@@ -322,7 +328,7 @@ export default function ContentManager() {
       <div className={styles.formGrid}>
         <Field label="Curiosity value"><input value={content.about.curiosityValue} onChange={(e) => setContent((c) => ({ ...c, about: { ...c.about, curiosityValue: e.target.value } }))}/></Field>
         <Field label="Curiosity label"><input value={content.about.curiosityLabel} onChange={(e) => setContent((c) => ({ ...c, about: { ...c.about, curiosityLabel: e.target.value } }))}/></Field>
-        <MediaField label="About portrait" value={content.about.imageUrl} onChange={(url) => setContent((c) => ({ ...c, about: { ...c.about, imageUrl: url } }))}/>
+        <MediaGalleryField label="About photos" values={content.about.imageUrls} legacyValue={content.about.imageUrl} onChange={(urls) => setContent((c) => ({ ...c, about: { ...c.about, imageUrls: urls, imageUrl: urls[0] || c.about.imageUrl } }))} max={10} hint="Multiple photos rotate inside the existing About image frame."/>
       </div>
     </section>
 
@@ -339,7 +345,7 @@ export default function ContentManager() {
     <section className={styles.projectsSection}>
       <SectionHead kicker="PROJECTS" title={`${content.projects.length} project${content.projects.length === 1 ? "" : "s"}`} text="Add real screenshots when you have them. If Image is empty, the original developer-console visual stays exactly as the fallback." action={<button className={styles.addButton} type="button" onClick={() => setContent((c) => ({ ...c, projects: [...c.projects, newProject()] }))}>+ Add project</button>}/>
       <div className={styles.panel}><HeadingFields value={content.projectsHeading} onChange={(projectsHeading) => setContent((c) => ({ ...c, projectsHeading }))}/></div>
-      <div className={styles.projectList}>{content.projects.map((project, index) => <article className={styles.projectCard} key={project.id}><div className={styles.projectTop}><div className={styles.projectIndex}>{projectNumber(index)}</div><div className={styles.projectTopCopy}><strong>{project.title || "Untitled project"}</strong><span>{project.category || "No category"}</span></div><OrderButtons index={index} total={content.projects.length} label="project" onMove={(d) => moveArray("projects", index, d)} onDelete={() => removeArray("projects", index, "project")}/></div><div className={styles.formGrid}><Field label="Project title"><input value={project.title} onChange={(e) => patchArray("projects", index, { title: e.target.value })}/></Field><Field label="Category"><input value={project.category} onChange={(e) => patchArray("projects", index, { category: e.target.value })}/></Field><Field label="Repository / project URL" full><input value={project.href} onChange={(e) => patchArray("projects", index, { href: e.target.value })}/></Field><Field label="Description" full><textarea rows={4} value={project.description} onChange={(e) => patchArray("projects", index, { description: e.target.value })}/></Field><Field label="Highlight chips · comma separated"><input value={toCsv(project.chips)} onChange={(e) => patchArray("projects", index, { chips: fromCsv(e.target.value) })}/></Field><Field label="Tech stack · comma separated"><input value={toCsv(project.stack)} onChange={(e) => patchArray("projects", index, { stack: fromCsv(e.target.value) })}/></Field><Field label="Card icon"><select value={project.icon} onChange={(e) => patchArray("projects", index, { icon: e.target.value as ContentIconKey })}>{CONTENT_ICON_KEYS.map((key) => <option value={key} key={key}>{iconLabels[key]}</option>)}</select></Field><Field label="Internal ID"><input value={project.id} onChange={(e) => patchArray("projects", index, { id: e.target.value })}/></Field><ProjectMediaGallery values={project.imageUrls} legacyValue={project.imageUrl} onChange={(urls) => patchArray("projects", index, { imageUrls: urls, imageUrl: urls[0] || "" })}/><ProjectVideoField value={project.videoUrl} onChange={(url) => patchArray("projects", index, { videoUrl: url })}/></div></article>)}</div>
+      <div className={styles.projectList}>{content.projects.map((project, index) => <article className={styles.projectCard} key={project.id}><div className={styles.projectTop}><div className={styles.projectIndex}>{projectNumber(index)}</div><div className={styles.projectTopCopy}><strong>{project.title || "Untitled project"}</strong><span>{project.category || "No category"}</span></div><OrderButtons index={index} total={content.projects.length} label="project" onMove={(d) => moveArray("projects", index, d)} onDelete={() => removeArray("projects", index, "project")}/></div><div className={styles.formGrid}><Field label="Project title"><input value={project.title} onChange={(e) => patchArray("projects", index, { title: e.target.value })}/></Field><Field label="Category"><input value={project.category} onChange={(e) => patchArray("projects", index, { category: e.target.value })}/></Field><Field label="Repository / project URL" full><input value={project.href} onChange={(e) => patchArray("projects", index, { href: e.target.value })}/></Field><Field label="Description" full><textarea rows={4} value={project.description} onChange={(e) => patchArray("projects", index, { description: e.target.value })}/></Field><Field label="Highlight chips · comma separated"><input value={toCsv(project.chips)} onChange={(e) => patchArray("projects", index, { chips: fromCsv(e.target.value) })}/></Field><Field label="Tech stack · comma separated"><input value={toCsv(project.stack)} onChange={(e) => patchArray("projects", index, { stack: fromCsv(e.target.value) })}/></Field><Field label="Card icon"><select value={project.icon} onChange={(e) => patchArray("projects", index, { icon: e.target.value as ContentIconKey })}>{CONTENT_ICON_KEYS.map((key) => <option value={key} key={key}>{iconLabels[key]}</option>)}</select></Field><Field label="Internal ID"><input value={project.id} onChange={(e) => patchArray("projects", index, { id: e.target.value })}/></Field><MediaGalleryField label="Project screenshots" values={project.imageUrls} legacyValue={project.imageUrl} onChange={(urls) => patchArray("projects", index, { imageUrls: urls, imageUrl: urls[0] || "" })} max={12} emptyText="No screenshots yet. The portfolio keeps the current default developer-console graphic until you upload one."/><ProjectVideoField value={project.videoUrl} onChange={(url) => patchArray("projects", index, { videoUrl: url })}/></div></article>)}</div>
     </section>
 
     <section className={styles.panel}>
@@ -352,22 +358,22 @@ export default function ContentManager() {
       <SectionHead kicker="EXPERIENCE" title="Experience" text="This section stays completely hidden on the public portfolio while there are no entries. Add one later and it appears automatically with matching styling." action={<button className={styles.addButton} type="button" onClick={() => setContent((c) => ({ ...c, experiences: [...c.experiences, newExperience()] }))}>+ Add experience</button>}/>
       <HeadingFields value={content.experienceHeading} onChange={(experienceHeading) => setContent((c) => ({ ...c, experienceHeading }))}/>
       {content.experiences.length === 0 ? <div className={styles.emptyState}>No experience entries yet · public section is hidden.</div> : null}
-      <div className={styles.compactList}>{content.experiences.map((item, index) => <article className={styles.compactCard} key={item.id}><div className={styles.projectTop}><div className={styles.projectIndex}>{itemNumber(index)}</div><div className={styles.projectTopCopy}><strong>{item.role}</strong><span>{item.company}</span></div><OrderButtons index={index} total={content.experiences.length} label="experience" onMove={(d) => moveArray("experiences", index, d)} onDelete={() => removeArray("experiences", index, "experience")}/></div><div className={styles.formGrid}><Field label="Role"><input value={item.role} onChange={(e) => patchArray("experiences", index, { role: e.target.value })}/></Field><Field label="Company"><input value={item.company} onChange={(e) => patchArray("experiences", index, { company: e.target.value })}/></Field><Field label="Period"><input value={item.period} onChange={(e) => patchArray("experiences", index, { period: e.target.value })}/></Field><Field label="Location"><input value={item.location} onChange={(e) => patchArray("experiences", index, { location: e.target.value })}/></Field><Field label="Description" full><textarea rows={3} value={item.description} onChange={(e) => patchArray("experiences", index, { description: e.target.value })}/></Field><Field label="Highlights · comma separated" full><input value={toCsv(item.highlights)} onChange={(e) => patchArray("experiences", index, { highlights: fromCsv(e.target.value) })}/></Field><MediaField label="Optional company / work image" value={item.imageUrl} onChange={(url) => patchArray("experiences", index, { imageUrl: url })}/></div></article>)}</div>
+      <div className={styles.compactList}>{content.experiences.map((item, index) => <article className={styles.compactCard} key={item.id}><div className={styles.projectTop}><div className={styles.projectIndex}>{itemNumber(index)}</div><div className={styles.projectTopCopy}><strong>{item.role}</strong><span>{item.company}</span></div><OrderButtons index={index} total={content.experiences.length} label="experience" onMove={(d) => moveArray("experiences", index, d)} onDelete={() => removeArray("experiences", index, "experience")}/></div><div className={styles.formGrid}><Field label="Role"><input value={item.role} onChange={(e) => patchArray("experiences", index, { role: e.target.value })}/></Field><Field label="Company"><input value={item.company} onChange={(e) => patchArray("experiences", index, { company: e.target.value })}/></Field><Field label="Period"><input value={item.period} onChange={(e) => patchArray("experiences", index, { period: e.target.value })}/></Field><Field label="Location"><input value={item.location} onChange={(e) => patchArray("experiences", index, { location: e.target.value })}/></Field><Field label="Description" full><textarea rows={3} value={item.description} onChange={(e) => patchArray("experiences", index, { description: e.target.value })}/></Field><Field label="Highlights · comma separated" full><input value={toCsv(item.highlights)} onChange={(e) => patchArray("experiences", index, { highlights: fromCsv(e.target.value) })}/></Field><MediaGalleryField label="Company / work images" values={item.imageUrls} legacyValue={item.imageUrl} onChange={(urls) => patchArray("experiences", index, { imageUrls: urls, imageUrl: urls[0] || "" })} max={10} hint="Add several work/company images. They rotate inside the existing experience card."/></div></article>)}</div>
     </section>
 
     <section className={styles.panel}>
       <SectionHead kicker="CERTIFICATES" title="Certificates" text="No certificate section is shown publicly until you add a certificate. Each item supports an image, content and optional credential link." action={<button className={styles.addButton} type="button" onClick={() => setContent((c) => ({ ...c, certificates: [...c.certificates, newCertificate()] }))}>+ Add certificate</button>}/>
       <HeadingFields value={content.certificatesHeading} onChange={(certificatesHeading) => setContent((c) => ({ ...c, certificatesHeading }))}/>
       {content.certificates.length === 0 ? <div className={styles.emptyState}>No certificates yet · public section is hidden.</div> : null}
-      <div className={styles.compactList}>{content.certificates.map((item, index) => <article className={styles.compactCard} key={item.id}><div className={styles.projectTop}><div className={styles.projectIndex}>{itemNumber(index)}</div><div className={styles.projectTopCopy}><strong>{item.title}</strong><span>{item.issuer}</span></div><OrderButtons index={index} total={content.certificates.length} label="certificate" onMove={(d) => moveArray("certificates", index, d)} onDelete={() => removeArray("certificates", index, "certificate")}/></div><div className={styles.formGrid}><Field label="Certificate title"><input value={item.title} onChange={(e) => patchArray("certificates", index, { title: e.target.value })}/></Field><Field label="Issuer"><input value={item.issuer} onChange={(e) => patchArray("certificates", index, { issuer: e.target.value })}/></Field><Field label="Date"><input value={item.date} onChange={(e) => patchArray("certificates", index, { date: e.target.value })}/></Field><Field label="Credential URL"><input value={item.credentialUrl || ""} onChange={(e) => patchArray("certificates", index, { credentialUrl: e.target.value })}/></Field><Field label="Description" full><textarea rows={3} value={item.description} onChange={(e) => patchArray("certificates", index, { description: e.target.value })}/></Field><MediaField label="Certificate image" value={item.imageUrl} onChange={(url) => patchArray("certificates", index, { imageUrl: url })} hint="Upload the certificate image/scan. It is automatically cropped to fit the portfolio card without stretching."/></div></article>)}</div>
+      <div className={styles.compactList}>{content.certificates.map((item, index) => <article className={styles.compactCard} key={item.id}><div className={styles.projectTop}><div className={styles.projectIndex}>{itemNumber(index)}</div><div className={styles.projectTopCopy}><strong>{item.title}</strong><span>{item.issuer}</span></div><OrderButtons index={index} total={content.certificates.length} label="certificate" onMove={(d) => moveArray("certificates", index, d)} onDelete={() => removeArray("certificates", index, "certificate")}/></div><div className={styles.formGrid}><Field label="Certificate title"><input value={item.title} onChange={(e) => patchArray("certificates", index, { title: e.target.value })}/></Field><Field label="Issuer"><input value={item.issuer} onChange={(e) => patchArray("certificates", index, { issuer: e.target.value })}/></Field><Field label="Date"><input value={item.date} onChange={(e) => patchArray("certificates", index, { date: e.target.value })}/></Field><Field label="Credential URL"><input value={item.credentialUrl || ""} onChange={(e) => patchArray("certificates", index, { credentialUrl: e.target.value })}/></Field><Field label="Description" full><textarea rows={3} value={item.description} onChange={(e) => patchArray("certificates", index, { description: e.target.value })}/></Field><MediaGalleryField label="Certificate images" values={item.imageUrls} legacyValue={item.imageUrl} onChange={(urls) => patchArray("certificates", index, { imageUrls: urls, imageUrl: urls[0] || "" })} max={10} hint="Upload one or more certificate images/scans. They rotate inside the existing certificate card without stretching."/></div></article>)}</div>
     </section>
 
     <section className={styles.panel}>
       <SectionHead kicker="FINAL SECTIONS" title="Photo break & contact" text="Edit the final visual statement and contact CTA."/>
       <div className={styles.subHead}><strong>Photo break</strong></div>
-      <div className={styles.formGrid}><Field label="Eyebrow"><input value={content.photoBreak.eyebrow} onChange={(e) => setContent((c) => ({ ...c, photoBreak: { ...c.photoBreak, eyebrow: e.target.value } }))}/></Field><Field label="Title" hint="Press Enter in this field to create a line break."><textarea rows={2} value={content.photoBreak.title} onChange={(e) => setContent((c) => ({ ...c, photoBreak: { ...c.photoBreak, title: e.target.value } }))}/></Field><MediaField label="Photo break image" value={content.photoBreak.imageUrl} onChange={(url) => setContent((c) => ({ ...c, photoBreak: { ...c.photoBreak, imageUrl: url } }))}/></div>
+      <div className={styles.formGrid}><Field label="Eyebrow"><input value={content.photoBreak.eyebrow} onChange={(e) => setContent((c) => ({ ...c, photoBreak: { ...c.photoBreak, eyebrow: e.target.value } }))}/></Field><Field label="Title" hint="Press Enter in this field to create a line break."><textarea rows={2} value={content.photoBreak.title} onChange={(e) => setContent((c) => ({ ...c, photoBreak: { ...c.photoBreak, title: e.target.value } }))}/></Field><MediaGalleryField label="Photo break images" values={content.photoBreak.imageUrls} legacyValue={content.photoBreak.imageUrl} onChange={(urls) => setContent((c) => ({ ...c, photoBreak: { ...c.photoBreak, imageUrls: urls, imageUrl: urls[0] || c.photoBreak.imageUrl } }))} max={10}/></div>
       <div className={styles.subHead}><strong>Contact</strong></div>
-      <div className={styles.formGrid}><Field label="Eyebrow"><input value={content.contact.eyebrow} onChange={(e) => setContent((c) => ({ ...c, contact: { ...c.contact, eyebrow: e.target.value } }))}/></Field><Field label="Heading"><input value={content.contact.title} onChange={(e) => setContent((c) => ({ ...c, contact: { ...c.contact, title: e.target.value } }))}/></Field><Field label="Accent text"><input value={content.contact.accent} onChange={(e) => setContent((c) => ({ ...c, contact: { ...c.contact, accent: e.target.value } }))}/></Field><Field label="WhatsApp button"><input value={content.contact.whatsappButton} onChange={(e) => setContent((c) => ({ ...c, contact: { ...c.contact, whatsappButton: e.target.value } }))}/></Field><Field label="Contact description" full><textarea rows={3} value={content.contact.text} onChange={(e) => setContent((c) => ({ ...c, contact: { ...c.contact, text: e.target.value } }))}/></Field><Field label="Email button"><input value={content.contact.emailButton} onChange={(e) => setContent((c) => ({ ...c, contact: { ...c.contact, emailButton: e.target.value } }))}/></Field><MediaField label="Contact image" value={content.contact.imageUrl} onChange={(url) => setContent((c) => ({ ...c, contact: { ...c.contact, imageUrl: url } }))}/></div>
+      <div className={styles.formGrid}><Field label="Eyebrow"><input value={content.contact.eyebrow} onChange={(e) => setContent((c) => ({ ...c, contact: { ...c.contact, eyebrow: e.target.value } }))}/></Field><Field label="Heading"><input value={content.contact.title} onChange={(e) => setContent((c) => ({ ...c, contact: { ...c.contact, title: e.target.value } }))}/></Field><Field label="Accent text"><input value={content.contact.accent} onChange={(e) => setContent((c) => ({ ...c, contact: { ...c.contact, accent: e.target.value } }))}/></Field><Field label="WhatsApp button"><input value={content.contact.whatsappButton} onChange={(e) => setContent((c) => ({ ...c, contact: { ...c.contact, whatsappButton: e.target.value } }))}/></Field><Field label="Contact description" full><textarea rows={3} value={content.contact.text} onChange={(e) => setContent((c) => ({ ...c, contact: { ...c.contact, text: e.target.value } }))}/></Field><Field label="Email button"><input value={content.contact.emailButton} onChange={(e) => setContent((c) => ({ ...c, contact: { ...c.contact, emailButton: e.target.value } }))}/></Field><MediaGalleryField label="Contact photos" values={content.contact.imageUrls} legacyValue={content.contact.imageUrl} onChange={(urls) => setContent((c) => ({ ...c, contact: { ...c.contact, imageUrls: urls, imageUrl: urls[0] || c.contact.imageUrl } }))} max={10}/></div>
     </section>
 
     <div className={styles.saveBar}><div>{error ? <span className={styles.errorInline}>{error}</span> : notice ? <span className={styles.success}>{notice}</span> : <span>Changes stay private until you press Save.</span>}</div><button type="button" onClick={save} disabled={saving}>{saving ? "Saving…" : "Save portfolio changes"}</button></div>

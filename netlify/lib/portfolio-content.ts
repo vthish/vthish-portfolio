@@ -61,6 +61,14 @@ function stringList(value: unknown, maxItems: number, maxLength: number, fallbac
     .slice(0, maxItems);
 }
 
+
+function mediaUrls(value: unknown, legacyValue: unknown, fallbackLegacy = "", maxItems = 10) {
+  const list = stringList(value, maxItems, 800).map((url) => optionalLink(url)).filter(Boolean);
+  if (list.length) return list;
+  const legacy = optionalLink(legacyValue) || fallbackLegacy;
+  return legacy ? [legacy] : [];
+}
+
 function icon(value: unknown, fallback: ContentIconKey = "code") {
   const candidate = text(value, 30);
   return iconKeys.has(candidate) ? (candidate as ContentIconKey) : fallback;
@@ -104,12 +112,7 @@ function normalizeProject(value: unknown, index: number, fallback?: PortfolioPro
     stack: stringList(source.stack, 24, 65, fallback?.stack),
     icon: icon(source.icon, fallback?.icon || "code"),
     imageUrl: optionalLink(source.imageUrl) || fallback?.imageUrl || "",
-    imageUrls: (() => {
-      const uploaded = stringList(source.imageUrls, 8, 800).map((url) => optionalLink(url)).filter(Boolean);
-      if (uploaded.length) return uploaded;
-      const legacy = optionalLink(source.imageUrl) || fallback?.imageUrl || "";
-      return legacy ? [legacy] : [];
-    })(),
+    imageUrls: mediaUrls(source.imageUrls, source.imageUrl, fallback?.imageUrl || "", 12),
     videoUrl: optionalLink(source.videoUrl) || fallback?.videoUrl || "",
   };
 }
@@ -169,6 +172,7 @@ function normalizeCertificate(value: unknown, index: number): CertificateItem | 
     description: text(source.description, 900),
     credentialUrl: optionalLink(source.credentialUrl),
     imageUrl: optionalLink(source.imageUrl),
+    imageUrls: mediaUrls(source.imageUrls, source.imageUrl, "", 10),
   };
 }
 
@@ -187,6 +191,7 @@ function normalizeExperience(value: unknown, index: number): ExperienceItem | nu
     description: text(source.description, 1000),
     highlights: stringList(source.highlights, 14, 140),
     imageUrl: optionalLink(source.imageUrl),
+    imageUrls: mediaUrls(source.imageUrls, source.imageUrl, "", 10),
   };
 }
 
@@ -260,6 +265,7 @@ export function normalizePortfolioContent(value: unknown): PortfolioContent {
       roles: stringList(heroSource.roles, 12, 90, defaults.hero.roles),
       text: text(heroSource.text, 800, defaults.hero.text),
       profileImageUrl: optionalLink(heroSource.profileImageUrl) || defaults.hero.profileImageUrl,
+      profileImageUrls: mediaUrls(heroSource.profileImageUrls, heroSource.profileImageUrl, defaults.hero.profileImageUrl, 10),
       focusAreas: text(heroSource.focusAreas, 160, defaults.hero.focusAreas),
       coreStack: text(heroSource.coreStack, 160, defaults.hero.coreStack),
     },
@@ -267,6 +273,7 @@ export function normalizePortfolioContent(value: unknown): PortfolioContent {
     about: {
       heading: section(aboutSource.heading, defaults.about.heading),
       imageUrl: optionalLink(aboutSource.imageUrl) || defaults.about.imageUrl,
+      imageUrls: mediaUrls(aboutSource.imageUrls, aboutSource.imageUrl, defaults.about.imageUrl, 10),
       paragraphs: stringList(aboutSource.paragraphs, 8, 1200, defaults.about.paragraphs),
       curiosityValue: text(aboutSource.curiosityValue, 20, defaults.about.curiosityValue),
       curiosityLabel: text(aboutSource.curiosityLabel, 100, defaults.about.curiosityLabel),
@@ -287,6 +294,7 @@ export function normalizePortfolioContent(value: unknown): PortfolioContent {
     certificates,
     photoBreak: {
       imageUrl: optionalLink(photoBreakSource.imageUrl) || defaults.photoBreak.imageUrl,
+      imageUrls: mediaUrls(photoBreakSource.imageUrls, photoBreakSource.imageUrl, defaults.photoBreak.imageUrl, 10),
       eyebrow: text(photoBreakSource.eyebrow, 80, defaults.photoBreak.eyebrow),
       title: text(photoBreakSource.title, 240, defaults.photoBreak.title),
     },
@@ -296,6 +304,7 @@ export function normalizePortfolioContent(value: unknown): PortfolioContent {
       accent: text(contactSource.accent, 100, defaults.contact.accent),
       text: text(contactSource.text, 800, defaults.contact.text),
       imageUrl: optionalLink(contactSource.imageUrl) || defaults.contact.imageUrl,
+      imageUrls: mediaUrls(contactSource.imageUrls, contactSource.imageUrl, defaults.contact.imageUrl, 10),
       whatsappButton: text(contactSource.whatsappButton, 80, defaults.contact.whatsappButton),
       emailButton: text(contactSource.emailButton, 80, defaults.contact.emailButton),
     },

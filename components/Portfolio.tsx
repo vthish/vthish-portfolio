@@ -11,6 +11,7 @@ import {
 } from "motion/react";
 import { FormEvent, ReactNode, useEffect, useRef, useState, type ComponentType } from "react";
 import { DEFAULT_PORTFOLIO_CONTENT, itemNumber, projectNumber, type ContentIconKey, type PortfolioContent, type ProjectIconKey, type SocialLink } from "@/lib/portfolio-content";
+import { resolveVideoSource } from "@/lib/video";
 
 type IconProps = { size?: number; className?: string };
 
@@ -132,30 +133,60 @@ function ManagedImage({ src, alt, className = "", eager = false }: { src: string
   return <Image src={src} alt={alt} fill priority={eager} unoptimized={src.startsWith("/.netlify/functions/")} className={managedClass} sizes="(max-width: 900px) 100vw, 50vw" />;
 }
 
+function galleryImages(values?: string[], legacy?: string) {
+  const list = (values || []).filter(Boolean);
+  if (list.length) return list;
+  return legacy ? [legacy] : [];
+}
+
+function RotatingImage({ images, alt, className = "", eager = false, interval = 6200 }: { images: string[]; alt: string; className?: string; eager?: boolean; interval?: number }) {
+  const clean = images.filter(Boolean);
+  const [active, setActive] = useState(0);
+
+  useEffect(() => {
+    setActive(0);
+    if (clean.length <= 1) return;
+    const timer = window.setInterval(() => setActive((current) => (current + 1) % clean.length), interval);
+    return () => window.clearInterval(timer);
+  }, [clean.join("|"), interval]);
+
+  if (!clean.length) return null;
+  if (clean.length === 1) return <ManagedImage src={clean[0]} alt={alt} className={className} eager={eager}/>;
+  const src = clean[Math.min(active, clean.length - 1)];
+  return <AnimatePresence mode="sync" initial={false}>
+    <motion.div className="rotating-image-slide" key={`${src}-${active}`} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.65, ease: [0.22,1,0.36,1] }}>
+      <ManagedImage src={src} alt={`${alt} ${active + 1}`} className={className} eager={eager && active === 0}/>
+    </motion.div>
+  </AnimatePresence>;
+}
+
 function ProjectMediaShowcase({ images, videoUrl, title, number }: { images: string[]; videoUrl?: string; title: string; number: string }) {
   const [active, setActive] = useState(0);
+  const video = resolveVideoSource(videoUrl);
   const media = [
-    ...(videoUrl ? [{ type: "video" as const, src: videoUrl }] : []),
-    ...images.filter(Boolean).slice(0, 8).map((src) => ({ type: "image" as const, src })),
-  ].slice(0, 9);
+    ...(video ? [{ type: "video" as const, source: video }] : []),
+    ...images.filter(Boolean).slice(0, 12).map((src) => ({ type: "image" as const, src })),
+  ].slice(0, 13);
 
   useEffect(() => {
     setActive(0);
     if (media.length <= 1) return;
-    const timer = window.setInterval(() => setActive((current) => (current + 1) % media.length), 5200);
+    const timer = window.setInterval(() => setActive((current) => (current + 1) % media.length), 5600);
     return () => window.clearInterval(timer);
-  }, [media.map((item) => `${item.type}:${item.src}`).join("|")]);
+  }, [media.map((item) => item.type === "video" ? `video:${item.source.src}` : `image:${item.src}`).join("|")]);
 
   if (!media.length) return null;
   const current = media[Math.min(active, media.length - 1)];
+  const videoLabel = current.type === "video" ? current.source.provider.toUpperCase() : "PROJECT PREVIEW";
   return <>
     <AnimatePresence mode="sync" initial={false}>
-      <motion.div key={`${current.type}:${current.src}`} className="project-gallery-frame" initial={{ opacity: 0.18, scale: 1.018 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.55, ease: [0.22,1,0.36,1] }}>
-        {current.type === "video" ? <video className="project-demo-video" src={current.src} autoPlay muted loop playsInline preload="metadata" aria-label={`${title} demo video`} /> : <ManagedImage src={current.src} alt={`${title} screenshot ${Math.max(1, active + (videoUrl ? 0 : 1))}`} className="project-screenshot"/>}
+      <motion.div key={current.type === "video" ? `video:${current.source.src}` : `image:${current.src}`} className="project-gallery-frame" initial={{ opacity: 0.18, scale: 1.018 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.55, ease: [0.22,1,0.36,1] }}>
+        {current.type === "image" ? <ManagedImage src={current.src} alt={`${title} screenshot ${active + 1}`} className="project-screenshot"/> : current.source.kind === "direct" ? <video className="project-demo-video" src={current.source.src} autoPlay muted loop playsInline preload="metadata" aria-label={`${title} demo video`} /> : current.source.kind === "embed" ? <iframe className="project-demo-embed" src={current.source.src} title={`${title} ${current.source.provider} demo`} allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowFullScreen loading="lazy"/> : <a className="project-external-video" href={current.source.src} target="_blank" rel="noreferrer"><Icons.external size={28}/><strong>Watch project demo</strong><span>{current.source.provider}</span></a>}
       </motion.div>
     </AnimatePresence>
     <div className="project-screenshot-overlay"/>
-    <div className="project-visual-top project-visual-top-image"><span>PROJECT {number}</span><span><i /> {current.type === "video" ? "DEMO VIDEO" : "PROJECT PREVIEW"}</span></div>
+    <div className="project-visual-top project-visual-top-image"><span>PROJECT {number}</span><span><i /> {videoLabel}</span></div>
+    {current.type === "video" && current.source.kind !== "direct" ? <a className="project-video-open" href={current.source.kind === "embed" ? videoUrl : current.source.src} target="_blank" rel="noreferrer" aria-label="Open video in new tab"><Icons.external size={14}/></a> : null}
     {media.length > 1 ? <div className="project-gallery-status"><span>{String(active + 1).padStart(2, "0")} / {String(media.length).padStart(2, "0")}</span><div>{media.map((item, i) => <i key={`${item.type}-${i}`} className={i === active ? "active" : ""}/>)}</div></div> : null}
   </>;
 }
@@ -533,6 +564,61 @@ function RichText({ text }: { text: string }) {
   return <>{parts.map((part, index) => part.startsWith("**") && part.endsWith("**") ? <strong key={index}>{part.slice(2, -2)}</strong> : <span key={index}>{part}</span>)}</>;
 }
 
+function ContactEmailModal({ open, onClose, ownerName }: { open: boolean; onClose: () => void; ownerName: string }) {
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [subject, setSubject] = useState("");
+  const [message, setMessage] = useState("");
+  const [website, setWebsite] = useState("");
+  const [status, setStatus] = useState<"idle" | "sending" | "sent" | "error">("idle");
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (!open) return;
+    setStatus("idle");
+    setError("");
+    const onKey = (event: KeyboardEvent) => { if (event.key === "Escape") onClose(); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open, onClose]);
+
+  async function submit(event: FormEvent) {
+    event.preventDefault();
+    if (status === "sending") return;
+    setStatus("sending"); setError("");
+    try {
+      const response = await fetch("/.netlify/functions/contact-email", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ name, email, subject, message, website }),
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(payload.error || "Could not send your message.");
+      setStatus("sent");
+      setName(""); setEmail(""); setSubject(""); setMessage(""); setWebsite("");
+    } catch (err) {
+      setStatus("error");
+      setError(err instanceof Error ? err.message : "Could not send your message.");
+    }
+  }
+
+  return <AnimatePresence>
+    {open ? <motion.div className="email-modal-backdrop" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
+      <motion.div className="email-modal" initial={{ opacity: 0, y: 24, scale: 0.97 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 18, scale: 0.98 }} transition={{ type: "spring", stiffness: 330, damping: 28 }} role="dialog" aria-modal="true" aria-label={`Send ${ownerName} an email`}>
+        <div className="email-modal-head"><div><span>SEND A MESSAGE</span><h3>Email {ownerName}</h3><p>Write your own subject and message. Your email address is used as the reply-to address.</p></div><button type="button" onClick={onClose} aria-label="Close email form"><Icons.close size={19}/></button></div>
+        {status === "sent" ? <div className="email-success"><Icons.mail size={28}/><strong>Message sent.</strong><span>Thanks — your email was delivered successfully.</span><button type="button" onClick={onClose}>Close</button></div> : <form className="email-form" onSubmit={submit}>
+          <div className="email-form-grid"><label><span>Your name</span><input required maxLength={100} value={name} onChange={(e) => setName(e.target.value)} placeholder="Your name"/></label><label><span>Your email</span><input required type="email" maxLength={180} value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com"/></label></div>
+          <label><span>Subject</span><input required maxLength={180} value={subject} onChange={(e) => setSubject(e.target.value)} placeholder="What would you like to discuss?"/></label>
+          <label><span>Message</span><textarea required minLength={5} maxLength={5000} rows={7} value={message} onChange={(e) => setMessage(e.target.value)} placeholder="Write your message here…"/></label>
+          <label className="email-honeypot" aria-hidden="true"><span>Website</span><input tabIndex={-1} autoComplete="off" value={website} onChange={(e) => setWebsite(e.target.value)}/></label>
+          {error ? <div className="email-form-error">{error}</div> : null}
+          <div className="email-form-actions"><button type="button" onClick={onClose}>Cancel</button><button className="email-send-btn" type="submit" disabled={status === "sending"}><Icons.send size={16}/>{status === "sending" ? "Sending…" : "Send email"}</button></div>
+        </form>}
+      </motion.div>
+    </motion.div> : null}
+  </AnimatePresence>;
+}
+
 export default function Portfolio() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [roleIndex, setRoleIndex] = useState(0);
@@ -540,6 +626,7 @@ export default function Portfolio() {
   const [portfolioContent, setPortfolioContent] = useState<PortfolioContent>(DEFAULT_PORTFOLIO_CONTENT);
   const [showLoader, setShowLoader] = useState(true);
   const [pageVisible, setPageVisible] = useState(false);
+  const [emailOpen, setEmailOpen] = useState(false);
   const mouseX = useMotionValue(-200);
   const mouseY = useMotionValue(-200);
   const smoothX = useSpring(mouseX, { stiffness: 180, damping: 28, mass: 0.25 });
@@ -677,7 +764,7 @@ export default function Portfolio() {
           <motion.div className="hero-visual" initial={false} animate={pageVisible ? { opacity: 1, scale: 1, x: 0 } : { opacity: 0, scale: 0.975, x: 16 }} transition={{ duration: 1.0, ease: [0.22, 1, 0.36, 1] }}>
             <div className="portrait-orbit orbit-one" /><div className="portrait-orbit orbit-two" />
             <motion.div className="portrait-card" whileHover={{ rotate: 0, y: -6 }} transition={{ type: "spring", stiffness: 180, damping: 18 }}>
-              <div className="portrait-frame"><ManagedImage src={content.hero.profileImageUrl} alt={content.identity.name} eager /><div className="portrait-overlay" /></div>
+              <div className="portrait-frame"><RotatingImage images={galleryImages(content.hero.profileImageUrls, content.hero.profileImageUrl)} alt={content.identity.name} eager /><div className="portrait-overlay" /></div>
               <div className="portrait-caption"><span>Based in</span><strong><Icons.pin size={14}/> {content.identity.location.replace(", ", " / ")}</strong></div>
             </motion.div>
             <motion.div className="floating-badge badge-one" animate={{ y: [0, -10, 0] }} transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}>
@@ -701,8 +788,8 @@ export default function Portfolio() {
           <SectionTitle {...content.about.heading} />
           <div className="about-grid">
             <motion.div className="about-photo" initial={{ opacity: 0, x: -30 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 0.7 }}>
-              <ManagedImage src={content.about.imageUrl} alt={`Portrait of ${content.identity.name}`} />
-              <div className="photo-index">/ 01</div>
+              <RotatingImage images={galleryImages(content.about.imageUrls, content.about.imageUrl)} alt={`Portrait of ${content.identity.name}`} />
+              <div className="photo-index">/ {String(galleryImages(content.about.imageUrls, content.about.imageUrl).length).padStart(2, "0")}</div>
             </motion.div>
             <div className="about-copy">
               {content.about.paragraphs.map((paragraph, index) => (
@@ -801,7 +888,7 @@ export default function Portfolio() {
             <div className="experience-grid">
               {content.experiences.map((item, index) => (
                 <motion.article className="experience-card" key={item.id} initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-70px" }} transition={{ duration: 0.55, delay: Math.min(index * 0.07, 0.25) }}>
-                  {item.imageUrl ? <div className="experience-image"><ManagedImage src={item.imageUrl} alt={`${item.company} visual`}/></div> : <div className="experience-icon"><Icons.code size={24}/></div>}
+                  {galleryImages(item.imageUrls, item.imageUrl).length ? <div className="experience-image"><RotatingImage images={galleryImages(item.imageUrls, item.imageUrl)} alt={`${item.company} visual`}/></div> : <div className="experience-icon"><Icons.code size={24}/></div>}
                   <div className="experience-meta"><span>{item.period}</span>{item.location ? <i>{item.location}</i> : null}</div>
                   <h3>{item.role}</h3><strong>{item.company}</strong><p>{item.description}</p>
                   {item.highlights.length ? <div className="experience-highlights">{item.highlights.map((highlight) => <span key={highlight}>{highlight}</span>)}</div> : null}
@@ -816,7 +903,7 @@ export default function Portfolio() {
             <SectionTitle {...content.certificatesHeading} />
             <div className="certificate-grid">
               {content.certificates.map((item, index) => {
-                const inner = <><div className="certificate-visual">{item.imageUrl ? <ManagedImage src={item.imageUrl} alt={`${item.title} certificate`}/> : <div className="certificate-placeholder"><Icons.certificate size={42}/><span>CERTIFICATE</span></div>}<div className="certificate-number">{itemNumber(index)}</div></div><div className="certificate-copy"><div className="certificate-meta"><span>{item.issuer || "Certificate"}</span><i>{item.date}</i></div><h3>{item.title}</h3>{item.description ? <p>{item.description}</p> : null}{item.credentialUrl ? <span className="certificate-link">View credential <Icons.external size={14}/></span> : null}</div></>;
+                const inner = <><div className="certificate-visual">{galleryImages(item.imageUrls, item.imageUrl).length ? <RotatingImage images={galleryImages(item.imageUrls, item.imageUrl)} alt={`${item.title} certificate`}/> : <div className="certificate-placeholder"><Icons.certificate size={42}/><span>CERTIFICATE</span></div>}<div className="certificate-number">{itemNumber(index)}</div></div><div className="certificate-copy"><div className="certificate-meta"><span>{item.issuer || "Certificate"}</span><i>{item.date}</i></div><h3>{item.title}</h3>{item.description ? <p>{item.description}</p> : null}{item.credentialUrl ? <span className="certificate-link">View credential <Icons.external size={14}/></span> : null}</div></>;
                 return item.credentialUrl ? <motion.a className="certificate-card" href={item.credentialUrl} target="_blank" rel="noreferrer" key={item.id} initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-70px" }} transition={{ duration: 0.5, delay: Math.min(index * 0.06, 0.24) }} whileHover={{ y: -6 }}>{inner}</motion.a> : <motion.article className="certificate-card" key={item.id} initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-70px" }} transition={{ duration: 0.5, delay: Math.min(index * 0.06, 0.24) }} whileHover={{ y: -6 }}>{inner}</motion.article>;
               })}
             </div>
@@ -824,7 +911,7 @@ export default function Portfolio() {
         )}
 
         <section className="photo-break">
-          <div className="photo-break-image"><ManagedImage src={content.photoBreak.imageUrl} alt={`${content.identity.name} portfolio feature`} /></div>
+          <div className="photo-break-image"><RotatingImage images={galleryImages(content.photoBreak.imageUrls, content.photoBreak.imageUrl)} alt={`${content.identity.name} portfolio feature`} interval={7000}/></div>
           <div className="photo-break-overlay" />
           <motion.div className="photo-break-copy" initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
             <span>{content.photoBreak.eyebrow}</span><h2>{content.photoBreak.title.split("\n").map((line, index) => <span key={`${line}-${index}`}>{line}{index < content.photoBreak.title.split("\n").length - 1 ? <br/> : null}</span>)}</h2>
@@ -835,10 +922,10 @@ export default function Portfolio() {
           <div className="contact-card">
             <motion.div initial={{ opacity: 0, y: 22 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
               <span className="eyebrow"><span />{content.contact.eyebrow}</span><h2>{content.contact.title}<br/><em>{content.contact.accent}</em></h2><p>{content.contact.text}</p>
-              <div className="contact-actions"><MagneticLink className="whatsapp-btn" href={whatsappHref} external><Icons.message size={20}/> {content.contact.whatsappButton} <Icons.arrow size={18}/></MagneticLink><a className="mail-btn" href={`mailto:${content.identity.email}`}><Icons.mail size={18}/> {content.contact.emailButton}</a></div>
+              <div className="contact-actions"><MagneticLink className="whatsapp-btn" href={whatsappHref} external><Icons.message size={20}/> {content.contact.whatsappButton} <Icons.arrow size={18}/></MagneticLink><button className="mail-btn" type="button" onClick={() => setEmailOpen(true)}><Icons.mail size={18}/> {content.contact.emailButton}</button></div>
             </motion.div>
             <motion.div className="contact-portrait" initial={{ opacity: 0, scale: 0.92 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }} transition={{ duration: 0.7 }}>
-              <ManagedImage src={content.contact.imageUrl} alt={content.identity.name}/><div className="contact-ring ring-one"/><div className="contact-ring ring-two"/>
+              <RotatingImage images={galleryImages(content.contact.imageUrls, content.contact.imageUrl)} alt={content.identity.name} interval={6800}/><div className="contact-ring ring-one"/><div className="contact-ring ring-two"/>
             </motion.div>
           </div>
         </section>
@@ -854,6 +941,7 @@ export default function Portfolio() {
           <div className="footer-bottom"><span>© {new Date().getFullYear()} {content.identity.name}. All rights reserved.</span><span>{content.identity.footerTagline}</span></div>
         </footer>
 
+        <ContactEmailModal open={emailOpen} onClose={() => setEmailOpen(false)} ownerName={content.identity.firstName || content.identity.name}/>
         <Chatbot content={content} />
       </main>
     </MotionConfig>

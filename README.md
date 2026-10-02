@@ -305,3 +305,7 @@ The manager can update the CV URL and add, edit, delete or reorder portfolio pro
 
 ### Project media
 Projects can be managed from the private CMS with up to 8 screenshots plus one optional short MP4/WebM demo video (4 MB maximum through the current Netlify Function upload path).
+
+### CMS media + contact upgrades
+
+The private portfolio CMS supports multi-image galleries across the main portfolio visuals, up to 12 project screenshots, universal project demo links (YouTube/Vimeo/Loom/Drive/TikTok and more, with a safe external fallback), and a public on-site email form powered by the existing Resend configuration.

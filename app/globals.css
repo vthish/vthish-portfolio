@@ -751,3 +751,40 @@ footer { width: min(calc(100% - 48px), var(--max)); margin: 0 auto; padding: 26p
 }
 
 nextjs-portal { display: none !important; }
+
+/* Multi-image CMS + universal project video + website email form */
+.rotating-image-slide { position:absolute; inset:0; }
+.project-demo-embed { width:100%; height:100%; border:0; display:block; background:#050912; }
+.project-external-video { position:absolute; inset:0; display:grid; place-items:center; align-content:center; gap:8px; color:#eaf1ff; text-align:center; background:radial-gradient(circle at 50% 40%,rgba(75,124,255,.18),transparent 36%),linear-gradient(145deg,#0b1224,#050912); z-index:1; }
+.project-external-video strong { font-size:16px; letter-spacing:-.01em; }
+.project-external-video span { color:#8ea2c6; font-size:10px; text-transform:uppercase; letter-spacing:.12em; }
+.project-video-open { position:absolute; right:15px; top:48px; z-index:6; width:34px; height:34px; display:grid; place-items:center; color:#dce8ff; border-radius:10px; border:1px solid rgba(146,174,244,.22); background:rgba(6,11,22,.74); backdrop-filter:blur(10px); }
+.mail-btn { min-height:50px; display:inline-flex; align-items:center; justify-content:center; gap:9px; color:#eef4ff; font:inherit; cursor:pointer; border-radius:14px; }
+
+.email-modal-backdrop { position:fixed; inset:0; z-index:220; display:grid; place-items:center; padding:20px; background:rgba(2,5,12,.76); backdrop-filter:blur(16px); }
+.email-modal { width:min(680px,100%); max-height:min(820px,calc(100vh - 32px)); overflow:auto; border:1px solid rgba(130,161,239,.22); border-radius:26px; background:radial-gradient(circle at 0 0,rgba(72,116,255,.12),transparent 30%),rgba(7,11,22,.98); box-shadow:0 34px 100px rgba(0,0,0,.62); padding:24px; }
+.email-modal-head { display:flex; justify-content:space-between; gap:22px; align-items:flex-start; padding-bottom:20px; border-bottom:1px solid rgba(130,161,239,.13); }
+.email-modal-head > div { min-width:0; }
+.email-modal-head > div > span { color:#7faeff; font-size:9px; font-weight:850; letter-spacing:.18em; }
+.email-modal-head h3 { margin:7px 0 7px; font-size:clamp(24px,4vw,34px); letter-spacing:-.035em; }
+.email-modal-head p { margin:0; color:#8998b2; font-size:12px; line-height:1.6; max-width:520px; }
+.email-modal-head button { flex:none; width:38px; height:38px; display:grid; place-items:center; border-radius:11px; border:1px solid rgba(130,161,239,.16); background:rgba(255,255,255,.04); color:#e9f0ff; cursor:pointer; }
+.email-form { display:grid; gap:15px; margin-top:20px; }
+.email-form-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+.email-form label { display:grid; gap:7px; }
+.email-form label > span { color:#93a3bc; font-size:10px; font-weight:750; letter-spacing:.04em; }
+.email-form input,.email-form textarea { width:100%; box-sizing:border-box; border:1px solid rgba(130,161,239,.16); border-radius:12px; background:#060b16; color:#eef4ff; padding:13px 14px; outline:none; font:inherit; font-size:13px; }
+.email-form input:focus,.email-form textarea:focus { border-color:rgba(111,154,255,.5); box-shadow:0 0 0 3px rgba(76,124,255,.08); }
+.email-form textarea { resize:vertical; min-height:170px; line-height:1.6; }
+.email-honeypot { position:absolute!important; width:1px!important; height:1px!important; overflow:hidden!important; opacity:0!important; pointer-events:none!important; }
+.email-form-error { padding:11px 12px; border-radius:10px; color:#ffb2b2; background:rgba(255,78,78,.08); border:1px solid rgba(255,98,98,.15); font-size:12px; }
+.email-form-actions { display:flex; justify-content:flex-end; gap:10px; margin-top:2px; }
+.email-form-actions button { min-height:44px; padding:0 16px; border-radius:11px; border:1px solid rgba(130,161,239,.16); background:rgba(255,255,255,.035); color:#dce8ff; font:inherit; font-size:12px; font-weight:750; cursor:pointer; }
+.email-form-actions .email-send-btn { display:inline-flex; align-items:center; gap:8px; background:linear-gradient(135deg,#477dff,#725bea); color:white; border-color:transparent; }
+.email-form-actions button:disabled { opacity:.55; cursor:wait; }
+.email-success { min-height:300px; display:grid; place-items:center; align-content:center; gap:10px; text-align:center; color:#e8f0ff; }
+.email-success svg { color:#8db8ff; }
+.email-success strong { font-size:25px; }
+.email-success span { color:#8d9bb3; font-size:12px; }
+.email-success button { margin-top:10px; min-height:42px; padding:0 18px; border:0; border-radius:11px; background:linear-gradient(135deg,#477dff,#725bea); color:#fff; font-weight:750; cursor:pointer; }
+@media (max-width:640px) { .email-modal-backdrop { padding:10px; } .email-modal { padding:18px; border-radius:20px; } .email-form-grid { grid-template-columns:1fr; } .email-form-actions { flex-direction:column-reverse; } .email-form-actions button { width:100%; } }

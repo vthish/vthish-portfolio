@@ -72,6 +72,7 @@ export type CertificateItem = {
   description: string;
   credentialUrl?: string;
   imageUrl?: string;
+  imageUrls?: string[];
 };
 
 export type ExperienceItem = {
@@ -83,6 +84,7 @@ export type ExperienceItem = {
   description: string;
   highlights: string[];
   imageUrl?: string;
+  imageUrls?: string[];
 };
 
 export type PortfolioContent = {
@@ -107,6 +109,7 @@ export type PortfolioContent = {
     roles: string[];
     text: string;
     profileImageUrl: string;
+    profileImageUrls?: string[];
     focusAreas: string;
     coreStack: string;
   };
@@ -114,6 +117,7 @@ export type PortfolioContent = {
   about: {
     heading: SectionCopy;
     imageUrl: string;
+    imageUrls?: string[];
     paragraphs: string[];
     curiosityValue: string;
     curiosityLabel: string;
@@ -134,6 +138,7 @@ export type PortfolioContent = {
   certificates: CertificateItem[];
   photoBreak: {
     imageUrl: string;
+    imageUrls?: string[];
     eyebrow: string;
     title: string;
   };
@@ -143,6 +148,7 @@ export type PortfolioContent = {
     accent: string;
     text: string;
     imageUrl: string;
+    imageUrls?: string[];
     whatsappButton: string;
     emailButton: string;
   };
@@ -175,6 +181,7 @@ export const DEFAULT_PORTFOLIO_CONTENT: PortfolioContent = {
     roles: ["Software Engineer", "Full-Stack Developer", "Web Developer", "Mobile App Developer", "DevOps-ready Builder"],
     text: "I build practical digital products across web, mobile and DevOps — combining clean engineering, polished interfaces and reliable delivery for real-world use.",
     profileImageUrl: "/images/profile-main.webp",
+    profileImageUrls: ["/images/profile-main.webp"],
     focusAreas: "Web • Mobile • DevOps",
     coreStack: "Node.js • Nest.js • Next.js",
   },
@@ -186,6 +193,7 @@ export const DEFAULT_PORTFOLIO_CONTENT: PortfolioContent = {
       text: "I enjoy moving from an idea to a working product — combining software engineering, design awareness and practical automation to solve useful problems.",
     },
     imageUrl: "/images/profile-mono.webp",
+    imageUrls: ["/images/profile-mono.webp"],
     paragraphs: [
       "My toolkit spans **TypeScript, JavaScript, Java, Python, Dart, Next.js, Node.js, Nest.js, Spring Boot, Flutter, Docker, PostgreSQL, Oracle, Prisma, AWS and CI/CD**.",
       "I build for **web development, mobile app development and DevOps delivery** — focusing on software that is clean, modern, scalable and useful in day-to-day business or product environments. I also use modern AI tools when they are useful for research, debugging, documentation and faster iteration.",
@@ -252,6 +260,7 @@ export const DEFAULT_PORTFOLIO_CONTENT: PortfolioContent = {
   certificates: [],
   photoBreak: {
     imageUrl: "/images/city.webp",
+    imageUrls: ["/images/city.webp"],
     eyebrow: "THE NEXT BUILD",
     title: "Good software should feel\nsimple after the hard work.",
   },
@@ -261,6 +270,7 @@ export const DEFAULT_PORTFOLIO_CONTENT: PortfolioContent = {
     accent: "wild idea?",
     text: "If you need help with web development, mobile app development or DevOps-related delivery, the fastest way to start a conversation is WhatsApp.",
     imageUrl: "/images/contact.webp",
+    imageUrls: ["/images/contact.webp"],
     whatsappButton: "Start on WhatsApp",
     emailButton: "Email me",
   },
