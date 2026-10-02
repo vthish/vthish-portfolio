@@ -104,6 +104,12 @@ function normalizeProject(value: unknown, index: number, fallback?: PortfolioPro
     stack: stringList(source.stack, 24, 65, fallback?.stack),
     icon: icon(source.icon, fallback?.icon || "code"),
     imageUrl: optionalLink(source.imageUrl) || fallback?.imageUrl || "",
+    imageUrls: (() => {
+      const uploaded = stringList(source.imageUrls, 8, 800).map((url) => optionalLink(url)).filter(Boolean);
+      if (uploaded.length) return uploaded;
+      const legacy = optionalLink(source.imageUrl) || fallback?.imageUrl || "";
+      return legacy ? [legacy] : [];
+    })(),
   };
 }
 

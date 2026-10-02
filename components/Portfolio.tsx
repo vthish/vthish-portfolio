@@ -132,6 +132,32 @@ function ManagedImage({ src, alt, className = "", eager = false }: { src: string
   return <Image src={src} alt={alt} fill priority={eager} unoptimized={src.startsWith("/.netlify/functions/")} className={managedClass} sizes="(max-width: 900px) 100vw, 50vw" />;
 }
 
+function ProjectImageShowcase({ images, title, number }: { images: string[]; title: string; number: string }) {
+  const [active, setActive] = useState(0);
+  const safeImages = images.filter(Boolean).slice(0, 8);
+
+  useEffect(() => {
+    setActive(0);
+    if (safeImages.length <= 1) return;
+    const timer = window.setInterval(() => setActive((current) => (current + 1) % safeImages.length), 3200);
+    return () => window.clearInterval(timer);
+  }, [safeImages.join("|")]);
+
+  if (!safeImages.length) return null;
+  const current = safeImages[Math.min(active, safeImages.length - 1)];
+  return <>
+    <AnimatePresence mode="sync" initial={false}>
+      <motion.div key={current} className="project-gallery-frame" initial={{ opacity: 0.18, scale: 1.018 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.55, ease: [0.22,1,0.36,1] }}>
+        <ManagedImage src={current} alt={`${title} screenshot ${active + 1}`} className="project-screenshot"/>
+      </motion.div>
+    </AnimatePresence>
+    <div className="project-screenshot-overlay"/>
+    <div className="project-visual-top project-visual-top-image"><span>PROJECT {number}</span><span><i /> PROJECT PREVIEW</span></div>
+    {safeImages.length > 1 ? <div className="project-gallery-status"><span>{String(active + 1).padStart(2, "0")} / {String(safeImages.length).padStart(2, "0")}</span><div>{safeImages.map((_, i) => <i key={i} className={i === active ? "active" : ""}/>)}</div></div> : null}
+  </>;
+}
+
+
 const fadeUp = {
   hidden: { opacity: 0, y: 24 },
   visible: { opacity: 1, y: 0 },
@@ -722,11 +748,12 @@ export default function Portfolio() {
             {projects.map((project, index) => {
               const ProjectIcon = projectIconMap[project.icon] || Icons.code;
               const number = projectNumber(index);
+              const projectImages = project.imageUrls?.length ? project.imageUrls : project.imageUrl ? [project.imageUrl] : [];
               return (
-                <motion.a className={`project-card${project.imageUrl ? " has-project-image" : ""}`} href={project.href} target="_blank" rel="noreferrer" key={project.id} initial={{ opacity: 0, y: 26, scale: 0.985 }} whileInView={{ opacity: 1, y: 0, scale: 1 }} viewport={{ once: true, margin: "-70px" }} transition={{ duration: 0.5, delay: Math.min(index * 0.045, 0.22) }} whileHover={{ y: -8 }}>
+                <motion.a className={`project-card${projectImages.length ? " has-project-image" : ""}`} href={project.href} target="_blank" rel="noreferrer" key={project.id} initial={{ opacity: 0, y: 26, scale: 0.985 }} whileInView={{ opacity: 1, y: 0, scale: 1 }} viewport={{ once: true, margin: "-70px" }} transition={{ duration: 0.5, delay: Math.min(index * 0.045, 0.22) }} whileHover={{ y: -8 }}>
                   <div className="project-visual">
-                    {project.imageUrl ? (
-                      <><ManagedImage src={project.imageUrl} alt={`${project.title} screenshot`} className="project-screenshot"/><div className="project-screenshot-overlay"/><div className="project-visual-top project-visual-top-image"><span>PROJECT {number}</span><span><i /> PROJECT PREVIEW</span></div></>
+                    {projectImages.length ? (
+                      <ProjectImageShowcase images={projectImages} title={project.title} number={number}/>
                     ) : (
                       <>
                         <div className="project-visual-top"><span>PROJECT {number}</span><span><i /> PUBLIC REPOSITORY</span></div>

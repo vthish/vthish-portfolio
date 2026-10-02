@@ -93,3 +93,7 @@ or a PDF hosted by the portfolio itself:
 ## Important
 
 The existing loader, scroll animations, project-card fallback visual, analytics tracking and monthly analytics email are not replaced by this content manager. The new Experience and Certificates UI is conditional and does not change the current public page until you add entries.
+
+
+## Project screenshot galleries
+Each project can now store up to 8 JPG, PNG, or WebP screenshots (4 MB max per image). The first image is the cover image. Use the arrow buttons in the admin panel to reorder screenshots. If a project has no screenshots, the original developer-console project visual remains as the fallback. On the public portfolio, projects with multiple screenshots rotate through them automatically with a subtle indicator.

@@ -88,3 +88,17 @@
   .uploadButton,.removeMedia { width:100%; }
   .subHead { align-items:flex-start; flex-direction:column; }
 }
+
+.galleryToolbar { display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-top:4px; }
+.galleryToolbar small { color:#728199; font-size:11px; }
+.projectGalleryAdmin { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; margin-top:12px; }
+.projectGalleryItem { border:1px solid rgba(133,162,240,.14); border-radius:13px; padding:8px; background:#070c18; }
+.projectGalleryImage { position:relative; aspect-ratio:16/9; overflow:hidden; border-radius:9px; background:#050912; }
+.projectGalleryImage img { width:100%; height:100%; object-fit:cover; display:block; }
+.projectGalleryImage span { position:absolute; left:7px; top:7px; padding:4px 7px; border-radius:999px; background:rgba(7,12,24,.84); border:1px solid rgba(132,164,244,.22); color:#cfe0ff; font-size:9px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; }
+.projectGalleryActions { display:flex; gap:6px; margin-top:7px; }
+.projectGalleryActions button { flex:1; min-height:31px; border-radius:8px; border:1px solid rgba(133,162,240,.14); background:rgba(255,255,255,.035); color:#dce8ff; cursor:pointer; font-size:11px; }
+.projectGalleryActions button:last-child { color:#ffaaaa; border-color:rgba(255,110,110,.16); }
+.projectGalleryActions button:disabled { opacity:.3; cursor:not-allowed; }
+@media (max-width:760px) { .projectGalleryAdmin { grid-template-columns:1fr 1fr; } }
+@media (max-width:480px) { .projectGalleryAdmin { grid-template-columns:1fr; } }

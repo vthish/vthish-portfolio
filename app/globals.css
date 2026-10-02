@@ -610,6 +610,11 @@ footer { width: min(calc(100% - 48px), var(--max)); margin: 0 auto; padding: 26p
 .project-screenshot-overlay { position: absolute; inset: 0; z-index: 1; background: linear-gradient(180deg, rgba(4,8,16,.16), rgba(4,8,16,.03) 52%, rgba(4,8,16,.48)), linear-gradient(90deg, rgba(6,10,19,.18), transparent 50%); pointer-events: none; }
 .project-visual-top-image { z-index: 3; color: rgba(237,244,255,.9); text-shadow: 0 2px 12px rgba(0,0,0,.55); }
 .project-card.has-project-image .project-visual { background: #080d18; }
+.project-gallery-frame { position:absolute; inset:0; z-index:0; overflow:hidden; }
+.project-gallery-status { position:absolute; z-index:4; right:16px; bottom:14px; display:flex; align-items:center; gap:9px; padding:6px 8px; border-radius:999px; border:1px solid rgba(218,231,255,.15); background:rgba(4,8,17,.52); backdrop-filter:blur(10px); color:rgba(236,243,255,.78); font-size:8px; font-weight:800; letter-spacing:.08em; }
+.project-gallery-status > div { display:flex; gap:4px; align-items:center; }
+.project-gallery-status i { display:block; width:4px; height:4px; border-radius:999px; background:rgba(225,236,255,.28); transition:.3s ease; }
+.project-gallery-status i.active { width:12px; background:#a8c7ff; }
 
 .experience-section,.certificates-section { border-top: 1px solid rgba(120,150,235,.07); }
 .experience-grid { margin-top: 48px; display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 16px; }
