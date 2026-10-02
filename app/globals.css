@@ -536,7 +536,7 @@ html.portfolio-loading body { overflow: hidden; }
 .photo-break-image img { object-fit: cover; object-position: center 58%; transform: scale(1.02); }
 .photo-break-overlay { position: absolute; inset: 0; background: linear-gradient(90deg, rgba(5,7,13,.94), rgba(5,7,13,.28) 55%, rgba(5,7,13,.7)), linear-gradient(0deg, var(--bg), transparent 24%, transparent 70%, var(--bg)); }
 .photo-break-copy { position: absolute; left: max(24px, calc((100vw - var(--max))/2)); top: 50%; transform: translateY(-50%); max-width: 720px; }
-.photo-break-copy > span { color: var(--blue); font-size: 9px; letter-spacing: .2em; font-weight: 800; }
+.photo-break-copy-inner > span { color: var(--blue); font-size: 9px; letter-spacing: .2em; font-weight: 800; }
 .photo-break-copy h2 { color: #fff; font-size: clamp(36px,5vw,70px); line-height: .98; margin: 16px 0 0; letter-spacing: -.05em; }
 .photo-break-copy h2 span { color: inherit; font-size: inherit; letter-spacing: inherit; font-weight: inherit; }
 

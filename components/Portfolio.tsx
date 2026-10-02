@@ -1020,9 +1020,11 @@ export default function Portfolio() {
         <section className="photo-break">
           <div className="photo-break-image"><RotatingImage images={galleryImages(content.photoBreak.imageUrls, content.photoBreak.imageUrl)} alt={`${content.identity.name} portfolio feature`} interval={7000}/></div>
           <div className="photo-break-overlay" />
-          <motion.div className="photo-break-copy" initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
-            <span>{content.photoBreak.eyebrow}</span><h2>{content.photoBreak.title.split("\n").map((line, index) => <span key={`${line}-${index}`}>{line}{index < content.photoBreak.title.split("\n").length - 1 ? <br/> : null}</span>)}</h2>
-          </motion.div>
+          <div className="photo-break-copy">
+            <motion.div className="photo-break-copy-inner" initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
+              <span>{content.photoBreak.eyebrow}</span><h2>{content.photoBreak.title.split("\n").map((line, index) => <span key={`${line}-${index}`}>{line}{index < content.photoBreak.title.split("\n").length - 1 ? <br/> : null}</span>)}</h2>
+            </motion.div>
+          </div>
         </section>
 
         <section className="section contact-section" id="contact">
