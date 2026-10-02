@@ -90,6 +90,12 @@ const Icons = {
   chevron: (p: IconProps) => (
     <Icon {...p}><path d="m6 9 6 6 6-6"/></Icon>
   ),
+  previous: (p: IconProps) => (
+    <Icon {...p}><path d="m15 18-6-6 6-6"/></Icon>
+  ),
+  next: (p: IconProps) => (
+    <Icon {...p}><path d="m9 18 6-6-6-6"/></Icon>
+  ),
   graduation: (p: IconProps) => (
     <Icon {...p}><path d="m2 10 10-5 10 5-10 5Z"/><path d="M6 12.5V17c2.8 2.5 9.2 2.5 12 0v-4.5"/><path d="M22 10v6"/></Icon>
   ),
@@ -142,27 +148,65 @@ function galleryImages(values?: string[], legacy?: string) {
 function RotatingImage({ images, alt, className = "", eager = false, interval = 6200 }: { images: string[]; alt: string; className?: string; eager?: boolean; interval?: number }) {
   const clean = images.filter(Boolean);
   const [active, setActive] = useState(0);
+  const touchStartX = useRef<number | null>(null);
+
+  const move = (direction: -1 | 1) => {
+    if (clean.length <= 1) return;
+    setActive((current) => (current + direction + clean.length) % clean.length);
+  };
+
+  const handleNav = (event: React.MouseEvent<HTMLDivElement> | React.KeyboardEvent<HTMLDivElement>, direction: -1 | 1) => {
+    event.preventDefault();
+    event.stopPropagation();
+    move(direction);
+  };
 
   useEffect(() => {
     setActive(0);
+  }, [clean.join("|")]);
+
+  useEffect(() => {
     if (clean.length <= 1) return;
-    const timer = window.setInterval(() => setActive((current) => (current + 1) % clean.length), interval);
-    return () => window.clearInterval(timer);
-  }, [clean.join("|"), interval]);
+    const timer = window.setTimeout(() => setActive((current) => (current + 1) % clean.length), interval);
+    return () => window.clearTimeout(timer);
+  }, [clean.join("|"), active, interval]);
 
   if (!clean.length) return null;
   if (clean.length === 1) return <ManagedImage src={clean[0]} alt={alt} className={className} eager={eager}/>;
-  const src = clean[Math.min(active, clean.length - 1)];
-  return <AnimatePresence mode="sync" initial={false}>
-    <motion.div className="rotating-image-slide" key={`${src}-${active}`} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.65, ease: [0.22,1,0.36,1] }}>
-      <ManagedImage src={src} alt={`${alt} ${active + 1}`} className={className} eager={eager && active === 0}/>
-    </motion.div>
-  </AnimatePresence>;
+  const safeActive = Math.min(active, clean.length - 1);
+  const src = clean[safeActive];
+
+  return <div
+    className="rotating-image-shell"
+    onTouchStart={(event) => { touchStartX.current = event.touches[0]?.clientX ?? null; }}
+    onTouchEnd={(event) => {
+      const startX = touchStartX.current;
+      const endX = event.changedTouches[0]?.clientX;
+      touchStartX.current = null;
+      if (startX == null || endX == null) return;
+      const delta = endX - startX;
+      if (Math.abs(delta) < 42) return;
+      event.preventDefault();
+      event.stopPropagation();
+      move(delta < 0 ? 1 : -1);
+    }}
+  >
+    <AnimatePresence mode="sync" initial={false}>
+      <motion.div className="rotating-image-slide" key={`${src}-${safeActive}`} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.65, ease: [0.22,1,0.36,1] }}>
+        <ManagedImage src={src} alt={`${alt} ${safeActive + 1}`} className={className} eager={eager && safeActive === 0}/>
+      </motion.div>
+    </AnimatePresence>
+    <div className="media-gallery-nav media-gallery-nav-generic" aria-label={`${alt} gallery navigation`}>
+      <div role="button" tabIndex={0} className="media-nav-btn media-nav-prev" aria-label="Previous image" onClick={(event) => handleNav(event, -1)} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") handleNav(event, -1); }}><Icons.previous size={16}/></div>
+      <div role="button" tabIndex={0} className="media-nav-btn media-nav-next" aria-label="Next image" onClick={(event) => handleNav(event, 1)} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") handleNav(event, 1); }}><Icons.next size={16}/></div>
+    </div>
+    <div className="media-gallery-dots" aria-hidden="true">{clean.map((_, index) => <i key={index} className={index === safeActive ? "active" : ""}/>)}</div>
+  </div>;
 }
 
 function ProjectMediaShowcase({ images, videoUrl, title, number }: { images: string[]; videoUrl?: string; title: string; number: string }) {
   const [active, setActive] = useState(0);
-  const [videoSkipped, setVideoSkipped] = useState(false);
+  const touchStartX = useRef<number | null>(null);
   const video = resolveVideoSource(videoUrl);
   const imageItems = images.filter(Boolean).slice(0, 12).map((src) => ({ type: "image" as const, src }));
   const media = [
@@ -173,51 +217,85 @@ function ProjectMediaShowcase({ images, videoUrl, title, number }: { images: str
 
   useEffect(() => {
     setActive(0);
-    setVideoSkipped(false);
   }, [mediaKey]);
 
   useEffect(() => {
-    if (imageItems.length <= 1) return;
+    if (media.length <= 1) return;
+    const current = media[Math.min(active, media.length - 1)];
 
-    // If a project has a video, keep it on-screen and let it play until the
-    // visitor explicitly skips it. Only then start rotating the screenshots.
-    if (video && !videoSkipped) return;
+    // Never auto-skip a video. It remains active until the visitor chooses
+    // Next/Skip or swipes manually. Once on screenshots, only screenshots
+    // auto-rotate; automatic rotation never jumps back to the video.
+    if (current?.type === "video") return;
+    if (imageItems.length <= 1) return;
 
     const firstImageIndex = video ? 1 : 0;
     const lastImageIndex = firstImageIndex + imageItems.length - 1;
-    const timer = window.setInterval(() => {
-      setActive((current) => {
-        if (current < firstImageIndex || current >= lastImageIndex) return firstImageIndex;
-        return current + 1;
+    const timer = window.setTimeout(() => {
+      setActive((currentIndex) => {
+        if (currentIndex < firstImageIndex || currentIndex >= lastImageIndex) return firstImageIndex;
+        return currentIndex + 1;
       });
     }, 5600);
-    return () => window.clearInterval(timer);
-  }, [mediaKey, videoSkipped]);
+    return () => window.clearTimeout(timer);
+  }, [mediaKey, active]);
 
   if (!media.length) return null;
-  const current = media[Math.min(active, media.length - 1)];
+  const safeActive = Math.min(active, media.length - 1);
+  const current = media[safeActive];
   const videoLabel = current.type === "video" ? current.source.provider.toUpperCase() : "PROJECT PREVIEW";
   const canSkipVideo = Boolean(video && imageItems.length && current.type === "video");
+
+  const move = (direction: -1 | 1) => {
+    if (media.length <= 1) return;
+    setActive((currentIndex) => (currentIndex + direction + media.length) % media.length);
+  };
+
+  const handleNav = (event: React.MouseEvent<HTMLDivElement> | React.KeyboardEvent<HTMLDivElement>, direction: -1 | 1) => {
+    event.preventDefault();
+    event.stopPropagation();
+    move(direction);
+  };
+
   const skipVideo = (event: React.MouseEvent<HTMLDivElement> | React.KeyboardEvent<HTMLDivElement>) => {
     event.preventDefault();
     event.stopPropagation();
     if (!canSkipVideo) return;
-    setVideoSkipped(true);
     setActive(1);
   };
 
-  return <>
+  return <div
+    className="project-media-shell"
+    onTouchStart={(event) => { touchStartX.current = event.touches[0]?.clientX ?? null; }}
+    onTouchEnd={(event) => {
+      const startX = touchStartX.current;
+      const endX = event.changedTouches[0]?.clientX;
+      touchStartX.current = null;
+      if (startX == null || endX == null) return;
+      const delta = endX - startX;
+      if (Math.abs(delta) < 42) return;
+      event.preventDefault();
+      event.stopPropagation();
+      move(delta < 0 ? 1 : -1);
+    }}
+  >
     <AnimatePresence mode="sync" initial={false}>
       <motion.div key={current.type === "video" ? `video:${current.source.src}` : `image:${current.src}`} className="project-gallery-frame" initial={{ opacity: 0.18, scale: 1.018 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.55, ease: [0.22,1,0.36,1] }}>
-        {current.type === "image" ? <ManagedImage src={current.src} alt={`${title} screenshot ${active + 1}`} className="project-screenshot"/> : current.source.kind === "direct" ? <video className="project-demo-video" src={current.source.src} poster={imageItems[0]?.src || undefined} autoPlay muted loop playsInline preload="auto" aria-label={`${title} demo video`} /> : current.source.kind === "embed" ? <iframe className="project-demo-embed" src={current.source.src} title={`${title} ${current.source.provider} demo`} allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowFullScreen loading="eager"/> : <a className="project-external-video" href={current.source.src} target="_blank" rel="noreferrer"><Icons.external size={28}/><strong>Watch project demo</strong><span>{current.source.provider}</span></a>}
+        {current.type === "image" ? <ManagedImage src={current.src} alt={`${title} screenshot ${safeActive + 1}`} className="project-screenshot"/> : current.source.kind === "direct" ? <video className="project-demo-video" src={current.source.src} poster={imageItems[0]?.src || undefined} autoPlay muted loop playsInline preload="auto" aria-label={`${title} demo video`} /> : current.source.kind === "embed" ? <iframe className="project-demo-embed" src={current.source.src} title={`${title} ${current.source.provider} demo`} allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowFullScreen loading="eager"/> : <a className="project-external-video" href={current.source.src} target="_blank" rel="noreferrer"><Icons.external size={28}/><strong>Watch project demo</strong><span>{current.source.provider}</span></a>}
       </motion.div>
     </AnimatePresence>
     <div className="project-screenshot-overlay"/>
     <div className="project-visual-top project-visual-top-image"><span>PROJECT {number}</span><span><i /> {videoLabel}</span></div>
-    {current.type === "video" && current.source.kind !== "direct" ? <a className="project-video-open" href={current.source.kind === "embed" ? videoUrl : current.source.src} target="_blank" rel="noreferrer" aria-label="Open video in new tab"><Icons.external size={14}/></a> : null}
-    {canSkipVideo ? <div className="project-video-skip" role="button" tabIndex={0} onClick={skipVideo} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") skipVideo(event); }} aria-label="Skip project video and show screenshots"><span>Skip video</span><Icons.arrow size={14}/></div> : null}
-    {media.length > 1 ? <div className="project-gallery-status"><span>{String(active + 1).padStart(2, "0")} / {String(media.length).padStart(2, "0")}</span><div>{media.map((item, i) => <i key={`${item.type}-${i}`} className={i === active ? "active" : ""}/>)}</div></div> : null}
-  </>;
+    {current.type === "video" && current.source.kind !== "direct" ? <a className="project-video-open" href={current.source.kind === "embed" ? videoUrl : current.source.src} target="_blank" rel="noreferrer" aria-label="Open video in new tab" onClick={(event) => event.stopPropagation()}><Icons.external size={14}/></a> : null}
+    {canSkipVideo ? <div className="project-video-skip" role="button" tabIndex={0} onClick={skipVideo} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") skipVideo(event); }} aria-label="Skip project video and show screenshots"><span>Skip video</span><Icons.next size={14}/></div> : null}
+    {media.length > 1 ? <>
+      <div className="media-gallery-nav project-gallery-nav" aria-label={`${title} media navigation`}>
+        <div role="button" tabIndex={0} className="media-nav-btn media-nav-prev" aria-label="Previous media" onClick={(event) => handleNav(event, -1)} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") handleNav(event, -1); }}><Icons.previous size={17}/></div>
+        <div role="button" tabIndex={0} className="media-nav-btn media-nav-next" aria-label="Next media" onClick={(event) => handleNav(event, 1)} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") handleNav(event, 1); }}><Icons.next size={17}/></div>
+      </div>
+      <div className="project-gallery-status"><span>{String(safeActive + 1).padStart(2, "0")} / {String(media.length).padStart(2, "0")}</span><div>{media.map((item, i) => <i key={`${item.type}-${i}`} className={i === safeActive ? "active" : ""}/>)}</div></div>
+    </> : null}
+  </div>;
 }
 
 

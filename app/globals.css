@@ -820,3 +820,105 @@ nextjs-portal { display: none !important; }
 }
 .project-video-skip svg { transition: transform .22s ease; }
 .project-video-skip:hover svg { transform: translateX(2px); }
+
+/* Unified manual + auto media navigation */
+.rotating-image-shell,
+.project-media-shell {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  touch-action: pan-y;
+}
+.project-media-shell { z-index: 0; }
+
+.media-gallery-nav {
+  position: absolute;
+  inset: 50% 12px auto;
+  z-index: 8;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  pointer-events: none;
+  transform: translateY(-50%);
+}
+.media-nav-btn {
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  border: 1px solid rgba(221,232,255,.18);
+  background: rgba(4,8,17,.5);
+  color: rgba(244,248,255,.92);
+  box-shadow: 0 8px 28px rgba(0,0,0,.22);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  cursor: pointer;
+  pointer-events: auto;
+  user-select: none;
+  opacity: .78;
+  transition: opacity .2s ease, transform .2s ease, background .2s ease, border-color .2s ease;
+}
+.media-nav-btn:hover,
+.media-nav-btn:focus-visible {
+  opacity: 1;
+  transform: scale(1.06);
+  background: rgba(13,22,41,.8);
+  border-color: rgba(168,199,255,.4);
+  outline: none;
+}
+.media-gallery-dots {
+  position: absolute;
+  z-index: 8;
+  left: 50%;
+  bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  transform: translateX(-50%);
+  padding: 6px 8px;
+  border-radius: 999px;
+  background: rgba(4,8,17,.38);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  pointer-events: none;
+}
+.media-gallery-dots i {
+  display: block;
+  width: 5px;
+  height: 5px;
+  border-radius: 999px;
+  background: rgba(229,238,255,.34);
+  transition: width .25s ease, background .25s ease;
+}
+.media-gallery-dots i.active {
+  width: 15px;
+  background: #b3ceff;
+}
+
+/* Project carousel: video is part of the same previous/next loop. */
+.project-gallery-nav { inset-inline: 13px; }
+.project-gallery-nav .media-nav-btn { background: rgba(4,8,17,.62); }
+.project-media-shell .project-gallery-status { right: 16px; bottom: 14px; }
+
+/* Keep existing copy/ornaments above generic galleries where needed. */
+.portrait-overlay,
+.photo-break-overlay,
+.photo-break-copy,
+.contact-ring,
+.photo-index,
+.certificate-number { pointer-events: none; }
+
+@media (hover:hover) and (pointer:fine) {
+  .media-gallery-nav-generic .media-nav-btn { opacity: 0; }
+  .rotating-image-shell:hover .media-gallery-nav-generic .media-nav-btn,
+  .rotating-image-shell:focus-within .media-gallery-nav-generic .media-nav-btn { opacity: .9; }
+}
+
+@media (max-width:640px) {
+  .media-gallery-nav { inset-inline: 8px; }
+  .media-nav-btn { width: 34px; height: 34px; opacity: .9; }
+  .media-gallery-dots { bottom: 9px; max-width: calc(100% - 88px); }
+  .media-gallery-dots i { width: 4px; height: 4px; }
+  .media-gallery-dots i.active { width: 12px; }
+}
