@@ -42,7 +42,7 @@ const toCsv = (items: string[]) => items.join(", ");
 const fromCsv = (value: string) => value.split(",").map((item) => item.trim()).filter(Boolean);
 
 function newProject(): PortfolioProject {
-  return { id: `project-${stamp()}`, title: "New Project", category: "Software / Project", description: "Add a concise description of what this project does and the problem it solves.", href: "https://github.com/vthish", chips: ["Project"], stack: ["TypeScript"], icon: "code", imageUrl: "", imageUrls: [] };
+  return { id: `project-${stamp()}`, title: "New Project", category: "Software / Project", description: "Add a concise description of what this project does and the problem it solves.", href: "https://github.com/vthish", chips: ["Project"], stack: ["TypeScript"], icon: "code", imageUrl: "", imageUrls: [], videoUrl: "" };
 }
 function newSkillGroup(): SkillGroup {
   return { id: `skill-${stamp()}`, title: "New Skill Group", summary: "Describe this capability area.", items: ["Skill"], icon: "code" };
@@ -107,6 +107,38 @@ function MediaField({ label, value, onChange, hint }: { label: string; value?: s
     {hint ? <small>{hint}</small> : null}
     {error ? <small className={styles.errorInline}>{error}</small> : null}
     {value ? <div className={styles.mediaPreview}><img src={value} alt="Preview"/></div> : null}
+  </div>;
+}
+
+
+function ProjectVideoField({ value, onChange }: { value?: string; onChange: (url: string) => void }) {
+  const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState("");
+
+  async function upload(file?: File) {
+    if (!file) return;
+    setUploading(true); setError("");
+    try {
+      const body = new FormData(); body.append("file", file);
+      const response = await fetch("/.netlify/functions/portfolio-media-admin", { method: "POST", body, credentials: "same-origin" });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(payload.error || "Video upload failed.");
+      onChange(payload.url);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Video upload failed.");
+    } finally { setUploading(false); }
+  }
+
+  return <div className={`${styles.field} ${styles.full}`}>
+    <span>Project demo video <small className={styles.optionalLabel}>optional</small></span>
+    <div className={styles.mediaRow}>
+      <input value={value || ""} onChange={(e) => onChange(e.target.value)} placeholder="Upload a short MP4/WebM or paste a direct video URL" />
+      <label className={styles.uploadButton}>{uploading ? "Uploading…" : value ? "Replace video" : "Upload video"}<input type="file" accept="video/mp4,video/webm" disabled={uploading} onChange={(e) => { void upload(e.target.files?.[0]); e.currentTarget.value = ""; }}/></label>
+      {value ? <button className={styles.removeMedia} type="button" onClick={() => onChange("")}>Remove</button> : null}
+    </div>
+    <small>MP4 or WebM · max 4 MB. If added, the demo video appears as the first media item before screenshots.</small>
+    {error ? <small className={styles.errorInline}>{error}</small> : null}
+    {value ? <div className={`${styles.mediaPreview} ${styles.videoPreview}`}><video src={value} controls muted playsInline preload="metadata" /></div> : null}
   </div>;
 }
 
@@ -307,7 +339,7 @@ export default function ContentManager() {
     <section className={styles.projectsSection}>
       <SectionHead kicker="PROJECTS" title={`${content.projects.length} project${content.projects.length === 1 ? "" : "s"}`} text="Add real screenshots when you have them. If Image is empty, the original developer-console visual stays exactly as the fallback." action={<button className={styles.addButton} type="button" onClick={() => setContent((c) => ({ ...c, projects: [...c.projects, newProject()] }))}>+ Add project</button>}/>
       <div className={styles.panel}><HeadingFields value={content.projectsHeading} onChange={(projectsHeading) => setContent((c) => ({ ...c, projectsHeading }))}/></div>
-      <div className={styles.projectList}>{content.projects.map((project, index) => <article className={styles.projectCard} key={project.id}><div className={styles.projectTop}><div className={styles.projectIndex}>{projectNumber(index)}</div><div className={styles.projectTopCopy}><strong>{project.title || "Untitled project"}</strong><span>{project.category || "No category"}</span></div><OrderButtons index={index} total={content.projects.length} label="project" onMove={(d) => moveArray("projects", index, d)} onDelete={() => removeArray("projects", index, "project")}/></div><div className={styles.formGrid}><Field label="Project title"><input value={project.title} onChange={(e) => patchArray("projects", index, { title: e.target.value })}/></Field><Field label="Category"><input value={project.category} onChange={(e) => patchArray("projects", index, { category: e.target.value })}/></Field><Field label="Repository / project URL" full><input value={project.href} onChange={(e) => patchArray("projects", index, { href: e.target.value })}/></Field><Field label="Description" full><textarea rows={4} value={project.description} onChange={(e) => patchArray("projects", index, { description: e.target.value })}/></Field><Field label="Highlight chips · comma separated"><input value={toCsv(project.chips)} onChange={(e) => patchArray("projects", index, { chips: fromCsv(e.target.value) })}/></Field><Field label="Tech stack · comma separated"><input value={toCsv(project.stack)} onChange={(e) => patchArray("projects", index, { stack: fromCsv(e.target.value) })}/></Field><Field label="Card icon"><select value={project.icon} onChange={(e) => patchArray("projects", index, { icon: e.target.value as ContentIconKey })}>{CONTENT_ICON_KEYS.map((key) => <option value={key} key={key}>{iconLabels[key]}</option>)}</select></Field><Field label="Internal ID"><input value={project.id} onChange={(e) => patchArray("projects", index, { id: e.target.value })}/></Field><ProjectMediaGallery values={project.imageUrls} legacyValue={project.imageUrl} onChange={(urls) => patchArray("projects", index, { imageUrls: urls, imageUrl: urls[0] || "" })}/></div></article>)}</div>
+      <div className={styles.projectList}>{content.projects.map((project, index) => <article className={styles.projectCard} key={project.id}><div className={styles.projectTop}><div className={styles.projectIndex}>{projectNumber(index)}</div><div className={styles.projectTopCopy}><strong>{project.title || "Untitled project"}</strong><span>{project.category || "No category"}</span></div><OrderButtons index={index} total={content.projects.length} label="project" onMove={(d) => moveArray("projects", index, d)} onDelete={() => removeArray("projects", index, "project")}/></div><div className={styles.formGrid}><Field label="Project title"><input value={project.title} onChange={(e) => patchArray("projects", index, { title: e.target.value })}/></Field><Field label="Category"><input value={project.category} onChange={(e) => patchArray("projects", index, { category: e.target.value })}/></Field><Field label="Repository / project URL" full><input value={project.href} onChange={(e) => patchArray("projects", index, { href: e.target.value })}/></Field><Field label="Description" full><textarea rows={4} value={project.description} onChange={(e) => patchArray("projects", index, { description: e.target.value })}/></Field><Field label="Highlight chips · comma separated"><input value={toCsv(project.chips)} onChange={(e) => patchArray("projects", index, { chips: fromCsv(e.target.value) })}/></Field><Field label="Tech stack · comma separated"><input value={toCsv(project.stack)} onChange={(e) => patchArray("projects", index, { stack: fromCsv(e.target.value) })}/></Field><Field label="Card icon"><select value={project.icon} onChange={(e) => patchArray("projects", index, { icon: e.target.value as ContentIconKey })}>{CONTENT_ICON_KEYS.map((key) => <option value={key} key={key}>{iconLabels[key]}</option>)}</select></Field><Field label="Internal ID"><input value={project.id} onChange={(e) => patchArray("projects", index, { id: e.target.value })}/></Field><ProjectMediaGallery values={project.imageUrls} legacyValue={project.imageUrl} onChange={(urls) => patchArray("projects", index, { imageUrls: urls, imageUrl: urls[0] || "" })}/><ProjectVideoField value={project.videoUrl} onChange={(url) => patchArray("projects", index, { videoUrl: url })}/></div></article>)}</div>
     </section>
 
     <section className={styles.panel}>

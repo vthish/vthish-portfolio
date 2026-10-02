@@ -110,6 +110,7 @@ function normalizeProject(value: unknown, index: number, fallback?: PortfolioPro
       const legacy = optionalLink(source.imageUrl) || fallback?.imageUrl || "";
       return legacy ? [legacy] : [];
     })(),
+    videoUrl: optionalLink(source.videoUrl) || fallback?.videoUrl || "",
   };
 }
 

@@ -81,6 +81,8 @@
 .removeMedia { color:#ffaaaa; border-color:rgba(255,110,110,.18); font:inherit; font-size:12px; font-weight:700; }
 .mediaPreview { position:relative; width:min(360px,100%); aspect-ratio:16/9; margin-top:8px; border-radius:13px; overflow:hidden; background:#070c18; border:1px solid rgba(133,162,240,.14); }
 .mediaPreview img { width:100%; height:100%; object-fit:cover; display:block; }
+.videoPreview video { width:100%; height:100%; object-fit:contain; display:block; background:#030712; }
+.optionalLabel { color:#71809c; font-size:9px; font-weight:700; letter-spacing:.04em; text-transform:uppercase; margin-left:6px; }
 .emptyState { margin-top:18px; padding:18px; border:1px dashed rgba(133,162,240,.18); border-radius:14px; background:rgba(255,255,255,.02); color:#7f8da4; font-size:13px; text-align:center; }
 .projectsSection > .panel { margin-bottom:16px; }
 @media (max-width:760px) {

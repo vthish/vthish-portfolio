@@ -3,7 +3,7 @@ import { isAdminAuthorized } from "../lib/admin-auth";
 
 const STORE_NAME = "portfolio-media-v1";
 const MAX_BYTES = 4 * 1024 * 1024;
-const ALLOWED = new Set(["image/jpeg", "image/png", "image/webp"]);
+const ALLOWED = new Set(["image/jpeg", "image/png", "image/webp", "video/mp4", "video/webm"]);
 
 function mediaStore() {
   return getStore({ name: STORE_NAME, consistency: "strong" });
@@ -17,11 +17,11 @@ export default async (req: Request) => {
     const form = await req.formData();
     const value = form.get("file");
     if (!value || typeof value === "string" || typeof value.arrayBuffer !== "function") {
-      return Response.json({ error: "Choose an image first." }, { status: 400 });
+      return Response.json({ error: "Choose an image or video first." }, { status: 400 });
     }
     const file = value as File;
-    if (!ALLOWED.has(file.type)) return Response.json({ error: "Use JPG, PNG or WebP images." }, { status: 400 });
-    if (file.size > MAX_BYTES) return Response.json({ error: "Image must be 4 MB or smaller." }, { status: 400 });
+    if (!ALLOWED.has(file.type)) return Response.json({ error: "Use JPG, PNG, WebP, MP4 or WebM files." }, { status: 400 });
+    if (file.size > MAX_BYTES) return Response.json({ error: "Media file must be 4 MB or smaller." }, { status: 400 });
 
     const bytes = new Uint8Array(await file.arrayBuffer());
     const base64 = Buffer.from(bytes).toString("base64");
@@ -38,7 +38,7 @@ export default async (req: Request) => {
       url: `/.netlify/functions/portfolio-media?id=${encodeURIComponent(id)}`,
     });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Could not upload image";
+    const message = error instanceof Error ? error.message : "Could not upload media";
     return Response.json({ error: message }, { status: 400 });
   }
 };

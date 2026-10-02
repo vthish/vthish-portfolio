@@ -301,3 +301,7 @@ Software Engineer · Full-Stack Developer · Mobile App Developer · DevOps
 This build also includes a private content manager at `https://vthish.dev/admin/content`. It uses the same `ANALYTICS_ADMIN_PASSWORD` as the analytics dashboard, so no additional environment variable is required.
 
 The manager can update the CV URL and add, edit, delete or reorder portfolio projects. Saved content is stored in Netlify Blobs and is loaded by the public portfolio at runtime. See `ADMIN-CONTENT-SETUP.md` for details.
+
+
+### Project media
+Projects can be managed from the private CMS with up to 8 screenshots plus one optional short MP4/WebM demo video (4 MB maximum through the current Netlify Function upload path).

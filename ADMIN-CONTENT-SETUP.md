@@ -97,3 +97,8 @@ The existing loader, scroll animations, project-card fallback visual, analytics 
 
 ## Project screenshot galleries
 Each project can now store up to 8 JPG, PNG, or WebP screenshots (4 MB max per image). The first image is the cover image. Use the arrow buttons in the admin panel to reorder screenshots. If a project has no screenshots, the original developer-console project visual remains as the fallback. On the public portfolio, projects with multiple screenshots rotate through them automatically with a subtle indicator.
+
+
+## Project demo videos
+
+Each project can optionally have one short demo video in addition to up to 8 screenshots. In the admin content manager, use **Project demo video** to upload an MP4 or WebM file (maximum 4 MB) or paste a direct MP4/WebM URL. If a video is present, it appears first in the public project media rotation; screenshots follow it. If no video or screenshots exist, the original developer-console project visual remains unchanged.
