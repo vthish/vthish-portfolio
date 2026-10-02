@@ -724,7 +724,13 @@ footer { width: min(calc(100% - 48px), var(--max)); margin: 0 auto; padding: 26p
 @media (max-width: 480px) {
   .hero-actions > a { width: 100%; }
   .hero-socials small { display: block; }
-  .floating-badge { display: none; }
+  .floating-badge { display: flex; max-width: 72%; padding: 8px 10px; gap: 8px; border-radius: 12px; }
+  .floating-badge small { font-size: 7px; letter-spacing: .11em; }
+  .floating-badge span { font-size: 9px; line-height: 1.25; }
+  .floating-badge svg { width: 15px; height: 15px; flex: none; }
+  .terminal-dot { width: 26px; height: 26px; border-radius: 8px; font-size: 9px; flex: none; }
+  .badge-one { right: -2px; top: 72px; }
+  .badge-two { left: -2px; bottom: 66px; }
   .hero-visual { min-height: 430px; }
   .portrait-card { width: 96%; }
   .about-contact-strip a { width: 100%; }
@@ -739,7 +745,7 @@ footer { width: min(calc(100% - 48px), var(--max)); margin: 0 auto; padding: 26p
   .project-content { padding: 24px; }
   .project-meta-row { align-items: flex-start; }
   .project-open { font-size: 10px; }
-  .contact-actions > a { width: 100%; }
+  .contact-actions > a, .contact-actions > button { width: 100%; }
   .chat-panel { right: 10px; bottom: 82px; width: calc(100vw - 20px); height: min(620px, calc(100vh - 98px)); border-radius: 22px; }
   .quick-actions { grid-template-columns: repeat(2, 1fr); }
   .quick-actions button { flex-direction: row; justify-content: center; font-size: 9px; }
