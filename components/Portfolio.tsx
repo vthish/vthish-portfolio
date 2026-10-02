@@ -162,31 +162,60 @@ function RotatingImage({ images, alt, className = "", eager = false, interval = 
 
 function ProjectMediaShowcase({ images, videoUrl, title, number }: { images: string[]; videoUrl?: string; title: string; number: string }) {
   const [active, setActive] = useState(0);
+  const [videoSkipped, setVideoSkipped] = useState(false);
   const video = resolveVideoSource(videoUrl);
+  const imageItems = images.filter(Boolean).slice(0, 12).map((src) => ({ type: "image" as const, src }));
   const media = [
     ...(video ? [{ type: "video" as const, source: video }] : []),
-    ...images.filter(Boolean).slice(0, 12).map((src) => ({ type: "image" as const, src })),
+    ...imageItems,
   ].slice(0, 13);
+  const mediaKey = media.map((item) => item.type === "video" ? `video:${item.source.src}` : `image:${item.src}`).join("|");
 
   useEffect(() => {
     setActive(0);
-    if (media.length <= 1) return;
-    const timer = window.setInterval(() => setActive((current) => (current + 1) % media.length), 5600);
+    setVideoSkipped(false);
+  }, [mediaKey]);
+
+  useEffect(() => {
+    if (imageItems.length <= 1) return;
+
+    // If a project has a video, keep it on-screen and let it play until the
+    // visitor explicitly skips it. Only then start rotating the screenshots.
+    if (video && !videoSkipped) return;
+
+    const firstImageIndex = video ? 1 : 0;
+    const lastImageIndex = firstImageIndex + imageItems.length - 1;
+    const timer = window.setInterval(() => {
+      setActive((current) => {
+        if (current < firstImageIndex || current >= lastImageIndex) return firstImageIndex;
+        return current + 1;
+      });
+    }, 5600);
     return () => window.clearInterval(timer);
-  }, [media.map((item) => item.type === "video" ? `video:${item.source.src}` : `image:${item.src}`).join("|")]);
+  }, [mediaKey, videoSkipped]);
 
   if (!media.length) return null;
   const current = media[Math.min(active, media.length - 1)];
   const videoLabel = current.type === "video" ? current.source.provider.toUpperCase() : "PROJECT PREVIEW";
+  const canSkipVideo = Boolean(video && imageItems.length && current.type === "video");
+  const skipVideo = (event: React.MouseEvent<HTMLDivElement> | React.KeyboardEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    event.stopPropagation();
+    if (!canSkipVideo) return;
+    setVideoSkipped(true);
+    setActive(1);
+  };
+
   return <>
     <AnimatePresence mode="sync" initial={false}>
       <motion.div key={current.type === "video" ? `video:${current.source.src}` : `image:${current.src}`} className="project-gallery-frame" initial={{ opacity: 0.18, scale: 1.018 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.55, ease: [0.22,1,0.36,1] }}>
-        {current.type === "image" ? <ManagedImage src={current.src} alt={`${title} screenshot ${active + 1}`} className="project-screenshot"/> : current.source.kind === "direct" ? <video className="project-demo-video" src={current.source.src} autoPlay muted loop playsInline preload="metadata" aria-label={`${title} demo video`} /> : current.source.kind === "embed" ? <iframe className="project-demo-embed" src={current.source.src} title={`${title} ${current.source.provider} demo`} allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowFullScreen loading="lazy"/> : <a className="project-external-video" href={current.source.src} target="_blank" rel="noreferrer"><Icons.external size={28}/><strong>Watch project demo</strong><span>{current.source.provider}</span></a>}
+        {current.type === "image" ? <ManagedImage src={current.src} alt={`${title} screenshot ${active + 1}`} className="project-screenshot"/> : current.source.kind === "direct" ? <video className="project-demo-video" src={current.source.src} poster={imageItems[0]?.src || undefined} autoPlay muted loop playsInline preload="auto" aria-label={`${title} demo video`} /> : current.source.kind === "embed" ? <iframe className="project-demo-embed" src={current.source.src} title={`${title} ${current.source.provider} demo`} allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowFullScreen loading="eager"/> : <a className="project-external-video" href={current.source.src} target="_blank" rel="noreferrer"><Icons.external size={28}/><strong>Watch project demo</strong><span>{current.source.provider}</span></a>}
       </motion.div>
     </AnimatePresence>
     <div className="project-screenshot-overlay"/>
     <div className="project-visual-top project-visual-top-image"><span>PROJECT {number}</span><span><i /> {videoLabel}</span></div>
     {current.type === "video" && current.source.kind !== "direct" ? <a className="project-video-open" href={current.source.kind === "embed" ? videoUrl : current.source.src} target="_blank" rel="noreferrer" aria-label="Open video in new tab"><Icons.external size={14}/></a> : null}
+    {canSkipVideo ? <div className="project-video-skip" role="button" tabIndex={0} onClick={skipVideo} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") skipVideo(event); }} aria-label="Skip project video and show screenshots"><span>Skip video</span><Icons.arrow size={14}/></div> : null}
     {media.length > 1 ? <div className="project-gallery-status"><span>{String(active + 1).padStart(2, "0")} / {String(media.length).padStart(2, "0")}</span><div>{media.map((item, i) => <i key={`${item.type}-${i}`} className={i === active ? "active" : ""}/>)}</div></div> : null}
   </>;
 }
