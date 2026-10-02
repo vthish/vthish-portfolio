@@ -53,3 +53,15 @@ To test without waiting for next month, open **Netlify → Functions → analyti
 - Unique visitors are estimated using a hashed browser ID, so the same person on multiple browsers/devices may count more than once.
 - Detectable bots are ignored.
 - The analytics tracker skips `/admin` pages so your dashboard visits do not inflate the public view count.
+
+## 6. Portfolio content manager
+
+The same `ANALYTICS_ADMIN_PASSWORD` also unlocks:
+
+```text
+https://vthish.dev/admin/content
+```
+
+After a successful login, the browser receives a secure 12-hour admin session cookie, so you can move between Analytics and Content Manager without entering the password again. Use **Lock** to end the session.
+
+The content manager stores the CV link and editable project list in Netlify Blobs. No additional environment variable is needed.

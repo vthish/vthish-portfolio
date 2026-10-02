@@ -58,3 +58,4 @@
   .grid { grid-template-columns: 1fr; }
   .daily { grid-template-columns: 1fr; }
 }
+.lockButton { text-decoration: none; display: inline-flex; align-items: center; justify-content: center; }

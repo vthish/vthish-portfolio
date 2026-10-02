@@ -1,20 +1,10 @@
-import { timingSafeEqual } from "node:crypto";
+import { isAdminAuthorized } from "../lib/admin-auth";
 import { getViews, monthKey, summarize, todayKey } from "../lib/analytics";
-
-function safeEqual(left: string, right: string) {
-  const a = Buffer.from(left);
-  const b = Buffer.from(right);
-  if (a.length !== b.length) return false;
-  return timingSafeEqual(a, b);
-}
 
 export default async (req: Request) => {
   if (req.method !== "GET") return new Response("Method not allowed", { status: 405 });
 
-  const configuredPassword = process.env.ANALYTICS_ADMIN_PASSWORD;
-  const suppliedPassword = req.headers.get("x-admin-password") || "";
-
-  if (!configuredPassword || !safeEqual(suppliedPassword, configuredPassword)) {
+  if (!isAdminAuthorized(req)) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 

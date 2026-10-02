@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import styles from "./analytics.module.css";
 
 type RankedItem = { label: string; count: number };
@@ -53,8 +53,36 @@ function RankedList({ title, items }: { title: string; items: RankedItem[] }) {
 export default function AnalyticsDashboard() {
   const [password, setPassword] = useState("");
   const [data, setData] = useState<AnalyticsResponse | null>(null);
+  const [authenticated, setAuthenticated] = useState<boolean | null>(null);
   const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  async function loadAnalytics() {
+    setLoading(true);
+    setError("");
+    try {
+      const response = await fetch("/.netlify/functions/analytics-admin", {
+        cache: "no-store",
+        credentials: "same-origin",
+      });
+      if (response.status === 401) {
+        setAuthenticated(false);
+        setData(null);
+        return;
+      }
+      if (!response.ok) throw new Error("Could not load analytics.");
+      setData((await response.json()) as AnalyticsResponse);
+      setAuthenticated(true);
+    } catch {
+      setError("Could not connect to the analytics function.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    loadAnalytics();
+  }, []);
 
   async function unlock(event: FormEvent) {
     event.preventDefault();
@@ -64,33 +92,48 @@ export default function AnalyticsDashboard() {
     setError("");
 
     try {
-      const response = await fetch("/.netlify/functions/analytics-admin", {
-        headers: { "x-admin-password": password },
-        cache: "no-store",
+      const response = await fetch("/.netlify/functions/admin-auth", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        credentials: "same-origin",
+        body: JSON.stringify({ password }),
       });
 
       if (!response.ok) {
-        setError(response.status === 401 ? "Wrong password." : "Could not load analytics.");
+        setError(response.status === 401 ? "Wrong password." : "Could not sign in.");
         return;
       }
 
-      setData((await response.json()) as AnalyticsResponse);
       setPassword("");
+      await loadAnalytics();
     } catch {
-      setError("Could not connect to the analytics function.");
+      setError("Could not connect to the admin service.");
     } finally {
       setLoading(false);
     }
   }
 
-  if (!data) {
+  async function lock() {
+    await fetch("/.netlify/functions/admin-auth", {
+      method: "DELETE",
+      credentials: "same-origin",
+    }).catch(() => undefined);
+    setAuthenticated(false);
+    setData(null);
+  }
+
+  if (loading && authenticated === null) {
+    return <main className={styles.page}><div className={styles.empty}>Loading admin…</div></main>;
+  }
+
+  if (!authenticated || !data) {
     return (
       <main className={styles.page}>
         <form className={styles.loginCard} onSubmit={unlock}>
           <div className={styles.mark}>VT</div>
-          <span className={styles.eyebrow}>PRIVATE ANALYTICS</span>
-          <h1>Portfolio traffic</h1>
-          <p>Enter your admin password to view private visitor statistics.</p>
+          <span className={styles.eyebrow}>PRIVATE ADMIN</span>
+          <h1>Portfolio analytics</h1>
+          <p>Enter your admin password. The same session also unlocks portfolio content management.</p>
           <input
             type="password"
             value={password}
@@ -101,7 +144,10 @@ export default function AnalyticsDashboard() {
           />
           <button type="submit" disabled={loading}>{loading ? "Loading…" : "Open dashboard"}</button>
           {error ? <div className={styles.error}>{error}</div> : null}
-          <a href="/">← Back to portfolio</a>
+          <div style={{ display: "flex", justifyContent: "space-between", gap: 12, marginTop: 16 }}>
+            <a href="/admin/content">Content manager</a>
+            <a href="/">Portfolio</a>
+          </div>
         </form>
       </main>
     );
@@ -116,7 +162,10 @@ export default function AnalyticsDashboard() {
             <h1>Portfolio analytics</h1>
             <p>Updated {new Date(data.generatedAt).toLocaleString()}</p>
           </div>
-          <button className={styles.lockButton} onClick={() => setData(null)}>Lock</button>
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap", justifyContent: "flex-end" }}>
+            <a className={styles.lockButton} href="/admin/content">Manage content</a>
+            <button className={styles.lockButton} onClick={lock}>Lock</button>
+          </div>
         </header>
 
         <section className={styles.metrics}>

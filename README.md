@@ -277,3 +277,9 @@ Software Engineer · Full-Stack Developer · Mobile App Developer · DevOps
 **© 2026 Venusha Thishan**
 
 </div>
+
+## Private portfolio content manager
+
+This build also includes a private content manager at `https://vthish.dev/admin/content`. It uses the same `ANALYTICS_ADMIN_PASSWORD` as the analytics dashboard, so no additional environment variable is required.
+
+The manager can update the CV URL and add, edit, delete or reorder portfolio projects. Saved content is stored in Netlify Blobs and is loaded by the public portfolio at runtime. See `ADMIN-CONTENT-SETUP.md` for details.

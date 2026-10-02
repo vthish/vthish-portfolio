@@ -9,7 +9,8 @@ import {
   useScroll,
   useSpring,
 } from "motion/react";
-import { FormEvent, ReactNode, useEffect, useMemo, useRef, useState } from "react";
+import { FormEvent, ReactNode, useEffect, useMemo, useRef, useState, type ComponentType } from "react";
+import { DEFAULT_PORTFOLIO_CONTENT, projectNumber, type PortfolioContent, type ProjectIconKey } from "@/lib/portfolio-content";
 
 type IconProps = { size?: number; className?: string };
 
@@ -108,78 +109,15 @@ const socialLinks = [
   { label: "LinkedIn", href: "https://www.linkedin.com/in/venusha-thishan", Icon: Icons.linkedin },
 ];
 
-const projects = [
-  {
-    number: "01",
-    title: "Auto Ledger",
-    category: "Full-Stack / GovTech",
-    description: "A secure multi-role digital driving-licence, traffic-fine and penalty-points platform with two Flutter apps, a Next.js admin portal and a NestJS REST API deployed on AWS.",
-    href: "https://github.com/vthish/Auto-Ledger",
-    chips: ["5 Roles", "QR Verification", "AWS Deployment"],
-    stack: ["Flutter", "Dart", "Next.js 16", "React 19", "NestJS 11", "TypeScript", "PostgreSQL", "Prisma ORM", "AWS", "Docker", "GitLab CI/CD"],
-    Icon: Icons.database,
-  },
-  {
-    number: "02",
-    title: "PulseAid Android",
-    category: "Android / Healthcare",
-    description: "A real-time blood donation management app connecting donors, hospitals, blood banks and admins through role-specific dashboards, emergency alerts and Firebase-backed data syncing.",
-    href: "https://github.com/vthish/PulseAid-Android",
-    chips: ["Blood Donation", "Real-time", "Multi-role"],
-    stack: ["Java", "Firebase Firestore", "Firebase Auth", "Material Design", "XML", "MVVM"],
-    Icon: Icons.phone,
-  },
-  {
-    number: "03",
-    title: "Smart Expense AI",
-    category: "Mobile / FinTech / ML",
-    description: "A Flutter expense tracker that understands natural-language entries, extracts amounts, predicts categories and supports a self-learning workflow through a FastAPI machine-learning backend.",
-    href: "https://github.com/vthish/Smart-Expense-Categorizer",
-    chips: ["NLP", "Self-learning", "Finance"],
-    stack: ["Flutter", "Dart", "FastAPI", "Python", "Firebase Firestore", "Firebase Auth", "Scikit-learn", "Pandas", "Docker"],
-    Icon: Icons.sparkles,
-  },
-  {
-    number: "04",
-    title: "HVTM Care",
-    category: "AI/ML / Healthcare",
-    description: "A pharmaceutical inventory forecasting platform that combines classical ML, BiLSTM/GRU deep learning and ensemble methods to predict demand and identify shortage risk.",
-    href: "https://github.com/vthish/HVTM_Care_AI-Driven_Drug_Forecasting_System",
-    chips: ["Forecasting", "Deep Learning", "Healthcare"],
-    stack: ["Python", "FastAPI", "TensorFlow/Keras", "Scikit-learn", "XGBoost", "Pandas/NumPy", "HTML/CSS/JS", "Joblib"],
-    Icon: Icons.brain,
-  },
-  {
-    number: "05",
-    title: "Sentry Gas App",
-    category: "Safety / Application",
-    description: "A safety-related application concept focused on gas monitoring, alert-oriented experiences and user-friendly interaction patterns.",
-    href: "https://github.com/vthish/sentry-gas-app",
-    chips: ["Safety", "App"],
-    stack: ["Flutter", "Mobile", "Monitoring"],
-    Icon: Icons.cloud,
-  },
-  {
-    number: "06",
-    title: "Synapse AI Notes",
-    category: "Full-Stack / Productivity",
-    description: "A secure note-taking web app with CRUD, search and subject filtering plus Hugging Face-powered summarization and assisted categorization, backed by Spring Boot and MySQL.",
-    href: "https://github.com/vthish/Synapse-AI-Notes-Summarize-System",
-    chips: ["Summarization", "Authentication", "Search"],
-    stack: ["Java 17", "Spring Boot 3", "MySQL", "Spring Security", "Maven", "Tailwind CSS", "Vanilla JS", "Hugging Face API", "Spring Data JPA"],
-    Icon: Icons.layers,
-  },
-  {
-    number: "07",
-    title: "Smart File Automator",
-    category: "Automation / Productivity",
-    description: "A file-automation project built to reduce repetitive manual work and improve how files are organized and processed.",
-    href: "https://github.com/vthish/smart-file-automator",
-    chips: ["Automation", "Files"],
-    stack: ["Node.js", "Automation", "Utility"],
-    Icon: Icons.code,
-  },
-];
+const projectIconMap: Record<ProjectIconKey, ComponentType<IconProps>> = {
+  database: Icons.database,
+  phone: Icons.phone,
+  sparkles: Icons.sparkles,
+  brain: Icons.brain,
+  cloud: Icons.cloud,
+  layers: Icons.layers,
+  code: Icons.code,
+};
 
 const skillGroups = [
   {
@@ -536,7 +474,7 @@ function InitialLoader() {
   );
 }
 
-function Chatbot() {
+function Chatbot({ projectCount }: { projectCount: number }) {
   const [open, setOpen] = useState(false);
   const [typing, setTyping] = useState(false);
   const [input, setInput] = useState("");
@@ -607,7 +545,7 @@ function Chatbot() {
       return "Venusha uses modern AI tools as a helpful part of his development workflow and has also built projects that integrate AI/ML services, while his broader focus remains software engineering across web, mobile and DevOps delivery.";
     }
     if (q.includes("project") || q.includes("github") || q.includes("repository") || q.includes("repo")) {
-      return "This portfolio highlights 7 public GitHub projects across full-stack web, Android, Flutter, machine learning, healthcare, safety and automation. Open the Projects section to see each project’s verified tech stack and repository.";
+      return `This portfolio currently highlights ${projectCount} public projects across full-stack web, Android, Flutter, machine learning, healthcare, safety and automation. Open the Projects section to see each project’s tech stack and repository.`;
     }
     if (q.includes("education") || q.includes("nibm") || q.includes("study")) {
       return "Venusha studied Software Engineering at NIBM Galle, including a Diploma and Higher National Diploma, after completing G.C.E. A/L in the Technology stream.";
@@ -721,6 +659,7 @@ export default function Portfolio() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [roleIndex, setRoleIndex] = useState(0);
   const [mounted, setMounted] = useState(false);
+  const [portfolioContent, setPortfolioContent] = useState<PortfolioContent>(DEFAULT_PORTFOLIO_CONTENT);
   const [showLoader, setShowLoader] = useState(true);
   const [pageVisible, setPageVisible] = useState(false);
   const mouseX = useMotionValue(-200);
@@ -772,6 +711,24 @@ export default function Portfolio() {
       document.documentElement.classList.remove("portfolio-loading");
     };
   }, []);
+
+  useEffect(() => {
+    let active = true;
+
+    fetch("/.netlify/functions/portfolio-content", { cache: "no-store" })
+      .then((response) => (response.ok ? response.json() : Promise.reject(new Error("content unavailable"))))
+      .then((content: PortfolioContent) => {
+        if (active && content?.cvUrl && Array.isArray(content.projects)) setPortfolioContent(content);
+      })
+      .catch(() => {
+        // Keep the code defaults if the content service is temporarily unavailable.
+      });
+
+    return () => { active = false; };
+  }, []);
+
+  const projects = portfolioContent.projects;
+  const cvUrl = portfolioContent.cvUrl;
 
   const marquee = useMemo(
     () => ["TypeScript", "Next.js", "Node.js", "Nest.js", "Java", "Spring Boot", "Flutter", "Docker", "PostgreSQL", "AWS", "CI/CD"],
@@ -868,7 +825,7 @@ export default function Portfolio() {
             </p>
             <div className="hero-actions">
               <MagneticLink href="#projects" className="primary-btn">Explore my work <Icons.arrow size={18}/></MagneticLink>
-              <MagneticLink href="https://drive.google.com/file/d/1Mi9rKwP5plZMO8qltgGDapabKt1fj0gu/view?usp=drivesdk" className="ghost-btn" external>
+              <MagneticLink href={cvUrl} className="ghost-btn" external>
                 <Icons.download size={18}/> View CV
               </MagneticLink>
             </div>
@@ -932,7 +889,7 @@ export default function Portfolio() {
                 I build for <strong>web development, mobile app development and DevOps delivery</strong> — focusing on software that is clean, modern, scalable and useful in day-to-day business or product environments. I also use modern AI tools when they are useful for research, debugging, documentation and faster iteration.
               </motion.p>
               <div className="metric-grid">
-                <div><strong>07</strong><span>GitHub projects<br/>featured</span></div>
+                <div><strong>{String(projects.length).padStart(2, "0")}</strong><span>GitHub projects<br/>featured</span></div>
                 <div><strong>03</strong><span>Education<br/>milestones</span></div>
                 <div><strong>∞</strong><span>Curiosity for<br/>building</span></div>
               </div>
@@ -992,14 +949,15 @@ export default function Portfolio() {
           </div>
           <div className="projects-list">
             {projects.map((project, index) => {
-              const ProjectIcon = project.Icon;
+              const ProjectIcon = projectIconMap[project.icon] || Icons.code;
+              const number = projectNumber(index);
               return (
               <motion.a
                 className="project-card"
                 href={project.href}
                 target="_blank"
                 rel="noreferrer"
-                key={project.title}
+                key={project.id}
                 initial={{ opacity: 0, y: 26, scale: 0.985 }}
                 whileInView={{ opacity: 1, y: 0, scale: 1 }}
                 viewport={{ once: true, margin: "-70px" }}
@@ -1007,7 +965,7 @@ export default function Portfolio() {
                 whileHover={{ y: -8 }}
               >
                 <div className="project-visual">
-                  <div className="project-visual-top"><span>PROJECT {project.number}</span><span><i /> PUBLIC REPOSITORY</span></div>
+                  <div className="project-visual-top"><span>PROJECT {number}</span><span><i /> PUBLIC REPOSITORY</span></div>
                   <div className="project-visual-grid" />
                   <div className="project-orb project-orb-a" /><div className="project-orb project-orb-b" />
                   <div className="project-console">
@@ -1104,7 +1062,7 @@ export default function Portfolio() {
           <div className="footer-bottom"><span>© {new Date().getFullYear()} Venusha Thishan. All rights reserved.</span><span>Software Engineer · Web · Mobile · DevOps</span></div>
         </footer>
 
-        <Chatbot />
+        <Chatbot projectCount={projects.length} />
       </main>
     </MotionConfig>
   );
