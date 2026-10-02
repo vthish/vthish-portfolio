@@ -929,3 +929,54 @@ nextjs-portal { display: none !important; }
   .media-gallery-dots i { width: 4px; height: 4px; }
   .media-gallery-dots i.active { width: 12px; }
 }
+
+/* 2026-10-02: smoother contact modal + lower mobile photo-break copy */
+.email-modal-backdrop {
+  background: rgba(2,5,12,.72);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  will-change: opacity;
+}
+.email-modal {
+  will-change: transform, opacity;
+  transform-origin: 50% 52%;
+  overscroll-behavior: contain;
+}
+.email-modal-head button:disabled,
+.email-success button:disabled {
+  opacity: .72;
+  cursor: default;
+}
+.email-success-icon {
+  width: 54px;
+  height: 54px;
+  display: grid;
+  place-items: center;
+  border-radius: 16px;
+  background: rgba(91,132,255,.10);
+  border: 1px solid rgba(130,161,239,.16);
+}
+.email-success-icon svg { color:#8db8ff; }
+
+@media (max-width: 720px) {
+  .photo-break-copy {
+    top: auto;
+    bottom: 54px;
+    transform: none;
+  }
+  .email-modal-backdrop {
+    align-items: end;
+    padding: 10px;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+  }
+  .email-modal {
+    width: 100%;
+    max-height: calc(100dvh - 20px);
+    border-radius: 22px;
+  }
+}
+
+@media (max-width: 480px) {
+  .photo-break-copy { bottom: 44px; }
+}

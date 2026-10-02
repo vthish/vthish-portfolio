@@ -679,15 +679,34 @@ function ContactEmailModal({ open, onClose, ownerName }: { open: boolean; onClos
   const [website, setWebsite] = useState("");
   const [status, setStatus] = useState<"idle" | "sending" | "sent" | "error">("idle");
   const [error, setError] = useState("");
+  const [successCanClose, setSuccessCanClose] = useState(true);
+  const statusRef = useRef(status);
+  const successCanCloseRef = useRef(successCanClose);
+
+  useEffect(() => { statusRef.current = status; }, [status]);
+  useEffect(() => { successCanCloseRef.current = successCanClose; }, [successCanClose]);
+
+  function requestClose() {
+    if (statusRef.current === "sent" && !successCanCloseRef.current) return;
+    onClose();
+  }
 
   useEffect(() => {
     if (!open) return;
     setStatus("idle");
     setError("");
-    const onKey = (event: KeyboardEvent) => { if (event.key === "Escape") onClose(); };
+    setSuccessCanClose(true);
+    const onKey = (event: KeyboardEvent) => { if (event.key === "Escape") requestClose(); };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [open, onClose]);
+  }, [open]);
+
+  useEffect(() => {
+    if (status !== "sent") return;
+    setSuccessCanClose(false);
+    const timer = window.setTimeout(() => setSuccessCanClose(true), 3000);
+    return () => window.clearTimeout(timer);
+  }, [status]);
 
   async function submit(event: FormEvent) {
     event.preventDefault();
@@ -709,18 +728,22 @@ function ContactEmailModal({ open, onClose, ownerName }: { open: boolean; onClos
     }
   }
 
+  const modalEase = [0.22, 1, 0.36, 1] as const;
+
   return <AnimatePresence>
-    {open ? <motion.div className="email-modal-backdrop" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
-      <motion.div className="email-modal" initial={{ opacity: 0, y: 24, scale: 0.97 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 18, scale: 0.98 }} transition={{ type: "spring", stiffness: 330, damping: 28 }} role="dialog" aria-modal="true" aria-label={`Send ${ownerName} an email`}>
-        <div className="email-modal-head"><div><span>SEND A MESSAGE</span><h3>Email {ownerName}</h3><p>Write your own subject and message. Your email address is used as the reply-to address.</p></div><button type="button" onClick={onClose} aria-label="Close email form"><Icons.close size={19}/></button></div>
-        {status === "sent" ? <div className="email-success"><Icons.mail size={28}/><strong>Message sent.</strong><span>Thanks — your email was delivered successfully.</span><button type="button" onClick={onClose}>Close</button></div> : <form className="email-form" onSubmit={submit}>
-          <div className="email-form-grid"><label><span>Your name</span><input required maxLength={100} value={name} onChange={(e) => setName(e.target.value)} placeholder="Your name"/></label><label><span>Your email</span><input required type="email" maxLength={180} value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com"/></label></div>
-          <label><span>Subject</span><input required maxLength={180} value={subject} onChange={(e) => setSubject(e.target.value)} placeholder="What would you like to discuss?"/></label>
-          <label><span>Message</span><textarea required minLength={5} maxLength={5000} rows={7} value={message} onChange={(e) => setMessage(e.target.value)} placeholder="Write your message here…"/></label>
-          <label className="email-honeypot" aria-hidden="true"><span>Website</span><input tabIndex={-1} autoComplete="off" value={website} onChange={(e) => setWebsite(e.target.value)}/></label>
-          {error ? <div className="email-form-error">{error}</div> : null}
-          <div className="email-form-actions"><button type="button" onClick={onClose}>Cancel</button><button className="email-send-btn" type="submit" disabled={status === "sending"}><Icons.send size={16}/>{status === "sending" ? "Sending…" : "Send email"}</button></div>
-        </form>}
+    {open ? <motion.div className="email-modal-backdrop" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.24, ease: "easeOut" }} onMouseDown={(event) => { if (event.target === event.currentTarget) requestClose(); }}>
+      <motion.div className="email-modal" initial={{ opacity: 0, y: 14, scale: 0.985 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 10, scale: 0.99 }} transition={{ duration: 0.34, ease: modalEase }} role="dialog" aria-modal="true" aria-label={`Send ${ownerName} an email`}>
+        <div className="email-modal-head"><div><span>SEND A MESSAGE</span><h3>Email {ownerName}</h3><p>Write your own subject and message. Your email address is used as the reply-to address.</p></div><button type="button" onClick={requestClose} aria-label="Close email form" disabled={status === "sent" && !successCanClose}><Icons.close size={19}/></button></div>
+        <AnimatePresence mode="wait" initial={false}>
+          {status === "sent" ? <motion.div key="success" className="email-success" initial={{ opacity: 0, y: 12, scale: 0.985 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.32, ease: modalEase }}><motion.div className="email-success-icon" initial={{ scale: 0.82, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ delay: 0.06, duration: 0.28, ease: modalEase }}><Icons.mail size={28}/></motion.div><strong>Message sent.</strong><span>Thanks — your email was delivered successfully.</span><button type="button" onClick={requestClose} disabled={!successCanClose}>{successCanClose ? "Close" : "Sent successfully"}</button></motion.div> : <motion.form key="form" className="email-form" onSubmit={submit} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.22, ease: "easeOut" }}>
+            <div className="email-form-grid"><label><span>Your name</span><input required maxLength={100} value={name} onChange={(e) => setName(e.target.value)} placeholder="Your name"/></label><label><span>Your email</span><input required type="email" maxLength={180} value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com"/></label></div>
+            <label><span>Subject</span><input required maxLength={180} value={subject} onChange={(e) => setSubject(e.target.value)} placeholder="What would you like to discuss?"/></label>
+            <label><span>Message</span><textarea required minLength={5} maxLength={5000} rows={7} value={message} onChange={(e) => setMessage(e.target.value)} placeholder="Write your message here…"/></label>
+            <label className="email-honeypot" aria-hidden="true"><span>Website</span><input tabIndex={-1} autoComplete="off" value={website} onChange={(e) => setWebsite(e.target.value)}/></label>
+            {error ? <motion.div className="email-form-error" initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2 }}>{error}</motion.div> : null}
+            <div className="email-form-actions"><button type="button" onClick={requestClose}>Cancel</button><button className="email-send-btn" type="submit" disabled={status === "sending"}><Icons.send size={16}/>{status === "sending" ? "Sending…" : "Send email"}</button></div>
+          </motion.form>}
+        </AnimatePresence>
       </motion.div>
     </motion.div> : null}
   </AnimatePresence>;
