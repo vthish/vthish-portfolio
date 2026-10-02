@@ -1,17 +1,24 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, ReactNode, useEffect, useMemo, useState } from "react";
 import {
+  CONTENT_ICON_KEYS,
   DEFAULT_PORTFOLIO_CONTENT,
-  PROJECT_ICON_KEYS,
+  itemNumber,
   projectNumber,
+  type CertificateItem,
+  type ContentIconKey,
+  type EducationItem,
+  type ExperienceItem,
   type PortfolioContent,
   type PortfolioProject,
-  type ProjectIconKey,
+  type ServiceItem,
+  type SkillGroup,
+  type SocialLink,
 } from "@/lib/portfolio-content";
 import styles from "./content.module.css";
 
-const iconLabels: Record<ProjectIconKey, string> = {
+const iconLabels: Record<ContentIconKey, string> = {
   database: "Database",
   phone: "Mobile",
   sparkles: "AI / Sparkles",
@@ -19,28 +26,92 @@ const iconLabels: Record<ProjectIconKey, string> = {
   cloud: "Cloud",
   layers: "Layers",
   code: "Code",
+  graduation: "Graduation",
+  certificate: "Certificate",
 };
 
+const socialIconLabels: Record<SocialLink["icon"], string> = {
+  github: "GitHub",
+  gitlab: "GitLab",
+  linkedin: "LinkedIn",
+  link: "External link",
+};
+
+const stamp = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+const toCsv = (items: string[]) => items.join(", ");
+const fromCsv = (value: string) => value.split(",").map((item) => item.trim()).filter(Boolean);
+
 function newProject(): PortfolioProject {
-  const stamp = Date.now().toString(36);
-  return {
-    id: `project-${stamp}`,
-    title: "New Project",
-    category: "Software / Project",
-    description: "Add a concise description of what this project does and the problem it solves.",
-    href: "https://github.com/vthish",
-    chips: ["Project"],
-    stack: ["TypeScript"],
-    icon: "code",
-  };
+  return { id: `project-${stamp()}`, title: "New Project", category: "Software / Project", description: "Add a concise description of what this project does and the problem it solves.", href: "https://github.com/vthish", chips: ["Project"], stack: ["TypeScript"], icon: "code", imageUrl: "" };
+}
+function newSkillGroup(): SkillGroup {
+  return { id: `skill-${stamp()}`, title: "New Skill Group", summary: "Describe this capability area.", items: ["Skill"], icon: "code" };
+}
+function newService(): ServiceItem {
+  return { id: `service-${stamp()}`, title: "New Service", text: "Describe the service you can provide.", icon: "code" };
+}
+function newEducation(): EducationItem {
+  return { id: `education-${stamp()}`, period: "Year / Institution", title: "New Education", place: "Program / Stream", text: "Describe this education milestone.", icon: "graduation" };
+}
+function newCertificate(): CertificateItem {
+  return { id: `certificate-${stamp()}`, title: "New Certificate", issuer: "Issuer", date: "Year", description: "Describe what this certificate validates.", credentialUrl: "", imageUrl: "" };
+}
+function newExperience(): ExperienceItem {
+  return { id: `experience-${stamp()}`, role: "Role title", company: "Company", period: "Start – End", location: "Location", description: "Describe your role and impact.", highlights: ["Key responsibility"], imageUrl: "" };
+}
+function newSocial(): SocialLink {
+  return { id: `social-${stamp()}`, label: "Profile", href: "https://", icon: "link" };
 }
 
-function toCsv(items: string[]) {
-  return items.join(", ");
+function SectionHead({ kicker, title, text, action }: { kicker: string; title: string; text?: string; action?: ReactNode }) {
+  return <div className={styles.sectionHead}><div><span className={styles.kicker}>{kicker}</span><h2>{title}</h2>{text ? <p>{text}</p> : null}</div>{action}</div>;
 }
 
-function fromCsv(value: string) {
-  return value.split(",").map((item) => item.trim()).filter(Boolean);
+function Field({ label, children, full = false, hint }: { label: string; children: ReactNode; full?: boolean; hint?: string }) {
+  return <label className={`${styles.field} ${full ? styles.full : ""}`}><span>{label}</span>{children}{hint ? <small>{hint}</small> : null}</label>;
+}
+
+function HeadingFields({ value, onChange }: { value: { eyebrow: string; title: string; text: string }; onChange: (next: { eyebrow: string; title: string; text: string }) => void }) {
+  return <div className={styles.formGrid}>
+    <Field label="Eyebrow"><input value={value.eyebrow} onChange={(e) => onChange({ ...value, eyebrow: e.target.value })}/></Field>
+    <Field label="Section title"><input value={value.title} onChange={(e) => onChange({ ...value, title: e.target.value })}/></Field>
+    <Field label="Section description" full><textarea rows={2} value={value.text} onChange={(e) => onChange({ ...value, text: e.target.value })}/></Field>
+  </div>;
+}
+
+function MediaField({ label, value, onChange, hint }: { label: string; value?: string; onChange: (url: string) => void; hint?: string }) {
+  const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState("");
+
+  async function upload(file?: File) {
+    if (!file) return;
+    setUploading(true); setError("");
+    try {
+      const body = new FormData(); body.append("file", file);
+      const response = await fetch("/.netlify/functions/portfolio-media-admin", { method: "POST", body, credentials: "same-origin" });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(payload.error || "Upload failed.");
+      onChange(payload.url);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Upload failed.");
+    } finally { setUploading(false); }
+  }
+
+  return <div className={`${styles.field} ${styles.full}`}>
+    <span>{label}</span>
+    <div className={styles.mediaRow}>
+      <input value={value || ""} onChange={(e) => onChange(e.target.value)} placeholder="/images/example.webp or https://..." />
+      <label className={styles.uploadButton}>{uploading ? "Uploading…" : "Upload image"}<input type="file" accept="image/png,image/jpeg,image/webp" disabled={uploading} onChange={(e) => { void upload(e.target.files?.[0]); e.currentTarget.value = ""; }}/></label>
+      {value ? <button className={styles.removeMedia} type="button" onClick={() => onChange("")}>Remove</button> : null}
+    </div>
+    {hint ? <small>{hint}</small> : null}
+    {error ? <small className={styles.errorInline}>{error}</small> : null}
+    {value ? <div className={styles.mediaPreview}><img src={value} alt="Preview"/></div> : null}
+  </div>;
+}
+
+function OrderButtons({ index, total, onMove, onDelete, label = "item" }: { index: number; total: number; onMove: (direction: -1 | 1) => void; onDelete: () => void; label?: string }) {
+  return <div className={styles.orderButtons}><button type="button" disabled={index === 0} onClick={() => onMove(-1)} aria-label={`Move ${label} up`}>↑</button><button type="button" disabled={index === total - 1} onClick={() => onMove(1)} aria-label={`Move ${label} down`}>↓</button><button className={styles.deleteButton} type="button" onClick={onDelete}>Delete</button></div>;
 }
 
 export default function ContentManager() {
@@ -53,225 +124,171 @@ export default function ContentManager() {
   const [notice, setNotice] = useState("");
 
   async function loadContent() {
-    setLoading(true);
-    setError("");
+    setLoading(true); setError("");
     try {
-      const response = await fetch("/.netlify/functions/portfolio-content-admin", {
-        cache: "no-store",
-        credentials: "same-origin",
-      });
-      if (response.status === 401) {
-        setAuthenticated(false);
-        return;
-      }
+      const response = await fetch("/.netlify/functions/portfolio-content-admin", { cache: "no-store", credentials: "same-origin" });
+      if (response.status === 401) { setAuthenticated(false); return; }
       if (!response.ok) throw new Error("Could not load portfolio content.");
-      setContent((await response.json()) as PortfolioContent);
-      setAuthenticated(true);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not load portfolio content.");
-    } finally {
-      setLoading(false);
-    }
+      setContent((await response.json()) as PortfolioContent); setAuthenticated(true);
+    } catch (err) { setError(err instanceof Error ? err.message : "Could not load portfolio content."); }
+    finally { setLoading(false); }
   }
 
-  useEffect(() => {
-    loadContent();
-  }, []);
+  useEffect(() => { void loadContent(); }, []);
 
   async function login(event: FormEvent) {
-    event.preventDefault();
-    if (!password) return;
-    setLoading(true);
-    setError("");
+    event.preventDefault(); if (!password) return;
+    setLoading(true); setError("");
     try {
-      const response = await fetch("/.netlify/functions/admin-auth", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        credentials: "same-origin",
-        body: JSON.stringify({ password }),
-      });
-      if (!response.ok) {
-        setError(response.status === 401 ? "Wrong password." : "Could not sign in.");
-        return;
-      }
-      setPassword("");
-      await loadContent();
-    } catch {
-      setError("Could not connect to the admin service.");
-    } finally {
-      setLoading(false);
-    }
+      const response = await fetch("/.netlify/functions/admin-auth", { method: "POST", headers: { "content-type": "application/json" }, credentials: "same-origin", body: JSON.stringify({ password }) });
+      if (!response.ok) { setError(response.status === 401 ? "Wrong password." : "Could not sign in."); return; }
+      setPassword(""); await loadContent();
+    } catch { setError("Could not connect to the admin service."); }
+    finally { setLoading(false); }
   }
 
   async function logout() {
-    await fetch("/.netlify/functions/admin-auth", {
-      method: "DELETE",
-      credentials: "same-origin",
-    }).catch(() => undefined);
-    setAuthenticated(false);
-    setNotice("");
+    await fetch("/.netlify/functions/admin-auth", { method: "DELETE", credentials: "same-origin" }).catch(() => undefined);
+    setAuthenticated(false); setNotice("");
   }
 
-  function patchProject(index: number, patch: Partial<PortfolioProject>) {
-    setContent((current) => ({
-      ...current,
-      projects: current.projects.map((project, projectIndex) => projectIndex === index ? { ...project, ...patch } : project),
-    }));
-    setNotice("");
+  type EditableArrayKey = "socialLinks" | "projects" | "education" | "experiences" | "certificates";
+  function patchArray(key: EditableArrayKey, index: number, patch: Record<string, unknown>) {
+    setContent((current) => ({ ...current, [key]: (current[key] as unknown as Record<string, unknown>[]).map((item, i) => i === index ? { ...item, ...patch } : item) } as PortfolioContent)); setNotice("");
+  }
+  function moveArray(key: EditableArrayKey, index: number, direction: -1 | 1) {
+    setContent((current) => { const next = [...(current[key] as unknown as Record<string, unknown>[])]; const target = index + direction; if (target < 0 || target >= next.length) return current; [next[index], next[target]] = [next[target], next[index]]; return { ...current, [key]: next } as PortfolioContent; }); setNotice("");
+  }
+  function removeArray(key: EditableArrayKey, index: number, label: string) {
+    if (!window.confirm(`Remove this ${label} from the portfolio?`)) return;
+    setContent((current) => ({ ...current, [key]: (current[key] as unknown as Record<string, unknown>[]).filter((_, i) => i !== index) } as PortfolioContent)); setNotice("");
   }
 
-  function moveProject(index: number, direction: -1 | 1) {
-    setContent((current) => {
-      const next = [...current.projects];
-      const target = index + direction;
-      if (target < 0 || target >= next.length) return current;
-      [next[index], next[target]] = [next[target], next[index]];
-      return { ...current, projects: next };
-    });
-    setNotice("");
+  function patchSkillGroup(index: number, patch: Partial<SkillGroup>) {
+    setContent((current) => ({ ...current, skills: { ...current.skills, groups: current.skills.groups.map((item, i) => i === index ? { ...item, ...patch } : item) } })); setNotice("");
   }
-
-  function removeProject(index: number) {
-    if (!window.confirm("Remove this project from the portfolio?")) return;
-    setContent((current) => ({ ...current, projects: current.projects.filter((_, i) => i !== index) }));
-    setNotice("");
+  function moveSkillGroup(index: number, direction: -1 | 1) {
+    setContent((current) => { const next = [...current.skills.groups]; const target = index + direction; if (target < 0 || target >= next.length) return current; [next[index], next[target]] = [next[target], next[index]]; return { ...current, skills: { ...current.skills, groups: next } }; }); setNotice("");
   }
+  function removeSkillGroup(index: number) { if (!window.confirm("Remove this skill group?")) return; setContent((current) => ({ ...current, skills: { ...current.skills, groups: current.skills.groups.filter((_, i) => i !== index) } })); }
+  function patchService(index: number, patch: Partial<ServiceItem>) { setContent((current) => ({ ...current, skills: { ...current.skills, services: current.skills.services.map((item, i) => i === index ? { ...item, ...patch } : item) } })); setNotice(""); }
+  function moveService(index: number, direction: -1 | 1) { setContent((current) => { const next = [...current.skills.services]; const target = index + direction; if (target < 0 || target >= next.length) return current; [next[index], next[target]] = [next[target], next[index]]; return { ...current, skills: { ...current.skills, services: next } }; }); setNotice(""); }
+  function removeService(index: number) { if (!window.confirm("Remove this service?")) return; setContent((current) => ({ ...current, skills: { ...current.skills, services: current.skills.services.filter((_, i) => i !== index) } })); }
 
   async function save() {
-    if (saving) return;
-    setSaving(true);
-    setError("");
-    setNotice("");
+    if (saving) return; setSaving(true); setError(""); setNotice("");
     try {
-      const response = await fetch("/.netlify/functions/portfolio-content-admin", {
-        method: "PUT",
-        headers: { "content-type": "application/json" },
-        credentials: "same-origin",
-        body: JSON.stringify(content),
-      });
+      const response = await fetch("/.netlify/functions/portfolio-content-admin", { method: "PUT", headers: { "content-type": "application/json" }, credentials: "same-origin", body: JSON.stringify(content) });
       const payload = await response.json().catch(() => ({}));
-      if (response.status === 401) {
-        setAuthenticated(false);
-        setError("Your admin session expired. Sign in again.");
-        return;
-      }
+      if (response.status === 401) { setAuthenticated(false); setError("Your admin session expired. Sign in again."); return; }
       if (!response.ok) throw new Error(payload.error || "Could not save changes.");
-      setContent(payload as PortfolioContent);
-      setNotice("Saved. The live portfolio will use these values on the next page load.");
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not save changes.");
-    } finally {
-      setSaving(false);
-    }
+      setContent(payload as PortfolioContent); setNotice("Saved. Refresh the live portfolio to see the updated content.");
+    } catch (err) { setError(err instanceof Error ? err.message : "Could not save changes."); }
+    finally { setSaving(false); }
   }
 
-  const projectCountLabel = useMemo(
-    () => `${content.projects.length} project${content.projects.length === 1 ? "" : "s"}`,
-    [content.projects.length]
-  );
+  const counts = useMemo(() => `${content.projects.length} projects · ${content.education.length} education · ${content.experiences.length} experience · ${content.certificates.length} certificates`, [content]);
 
-  if (loading && authenticated === null) {
-    return <main className={styles.page}><div className={styles.loading}>Loading admin…</div></main>;
-  }
+  if (loading && authenticated === null) return <main className={styles.page}><div className={styles.loading}>Loading admin…</div></main>;
+  if (!authenticated) return <main className={styles.page}><form className={styles.loginCard} onSubmit={login}><div className={styles.mark}>VT</div><span className={styles.eyebrow}>PRIVATE ADMIN</span><h1>Portfolio content</h1><p>Manage the live portfolio with the same password as your private analytics dashboard.</p><input type="password" value={password} onChange={(event) => setPassword(event.target.value)} placeholder="Admin password" autoComplete="current-password" autoFocus/><button type="submit" disabled={loading}>{loading ? "Signing in…" : "Open content manager"}</button>{error ? <div className={styles.error}>{error}</div> : null}<div className={styles.loginLinks}><a href="/admin/analytics">Analytics</a><a href="/">Portfolio</a></div></form></main>;
 
-  if (!authenticated) {
-    return (
-      <main className={styles.page}>
-        <form className={styles.loginCard} onSubmit={login}>
-          <div className={styles.mark}>VT</div>
-          <span className={styles.eyebrow}>PRIVATE ADMIN</span>
-          <h1>Portfolio content</h1>
-          <p>Use the same admin password as your private analytics dashboard.</p>
-          <input
-            type="password"
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
-            placeholder="Admin password"
-            autoComplete="current-password"
-            autoFocus
-          />
-          <button type="submit" disabled={loading}>{loading ? "Signing in…" : "Open content manager"}</button>
-          {error ? <div className={styles.error}>{error}</div> : null}
-          <div className={styles.loginLinks}><a href="/admin/analytics">Analytics</a><a href="/">Portfolio</a></div>
-        </form>
-      </main>
-    );
-  }
+  return <main className={styles.page}><div className={styles.dashboard}>
+    <header className={styles.header}><div><span className={styles.eyebrow}>VTHISH.DEV · PRIVATE ADMIN</span><h1>Portfolio content</h1><p>Full content manager · {counts}</p></div><div className={styles.headerActions}><a href="/admin/analytics">Analytics</a><a href="/" target="_blank" rel="noreferrer">Open portfolio ↗</a><button type="button" onClick={logout}>Lock</button></div></header>
 
-  return (
-    <main className={styles.page}>
-      <div className={styles.dashboard}>
-        <header className={styles.header}>
-          <div>
-            <span className={styles.eyebrow}>VTHISH.DEV · PRIVATE ADMIN</span>
-            <h1>Portfolio content</h1>
-            <p>Update your CV link and manage projects without editing source code.</p>
-          </div>
-          <div className={styles.headerActions}>
-            <a href="/admin/analytics">Analytics</a>
-            <a href="/" target="_blank" rel="noreferrer">Open portfolio ↗</a>
-            <button type="button" onClick={logout}>Lock</button>
-          </div>
-        </header>
-
-        <section className={styles.panel}>
-          <div className={styles.panelHead}>
-            <div><span className={styles.kicker}>CV</span><h2>CV link</h2></div>
-            <span className={styles.hint}>Google Drive or a direct /cv/file.pdf path</span>
-          </div>
-          <label className={styles.field}>
-            <span>CV URL</span>
-            <input
-              type="text"
-              value={content.cvUrl}
-              onChange={(event) => setContent((current) => ({ ...current, cvUrl: event.target.value }))}
-              placeholder="https://drive.google.com/file/d/.../view"
-            />
-          </label>
-          <div className={styles.inlineActions}>
-            <a href={content.cvUrl || "#"} target="_blank" rel="noreferrer">Test CV link ↗</a>
-          </div>
-        </section>
-
-        <section className={styles.projectsSection}>
-          <div className={styles.sectionHead}>
-            <div><span className={styles.kicker}>PROJECTS</span><h2>{projectCountLabel}</h2><p>Add, edit, remove or reorder the cards shown on your portfolio.</p></div>
-            <button className={styles.addButton} type="button" onClick={() => setContent((current) => ({ ...current, projects: [...current.projects, newProject()] }))}>+ Add project</button>
-          </div>
-
-          <div className={styles.projectList}>
-            {content.projects.map((project, index) => (
-              <article className={styles.projectCard} key={project.id}>
-                <div className={styles.projectTop}>
-                  <div className={styles.projectIndex}>{projectNumber(index)}</div>
-                  <div className={styles.projectTopCopy}><strong>{project.title || "Untitled project"}</strong><span>{project.category || "No category"}</span></div>
-                  <div className={styles.orderButtons}>
-                    <button type="button" disabled={index === 0} onClick={() => moveProject(index, -1)} aria-label="Move project up">↑</button>
-                    <button type="button" disabled={index === content.projects.length - 1} onClick={() => moveProject(index, 1)} aria-label="Move project down">↓</button>
-                    <button className={styles.deleteButton} type="button" onClick={() => removeProject(index)}>Delete</button>
-                  </div>
-                </div>
-
-                <div className={styles.formGrid}>
-                  <label className={styles.field}><span>Project title</span><input value={project.title} onChange={(e) => patchProject(index, { title: e.target.value })} /></label>
-                  <label className={styles.field}><span>Category</span><input value={project.category} onChange={(e) => patchProject(index, { category: e.target.value })} /></label>
-                  <label className={`${styles.field} ${styles.full}`}><span>Repository / project URL</span><input type="url" value={project.href} onChange={(e) => patchProject(index, { href: e.target.value })} /></label>
-                  <label className={`${styles.field} ${styles.full}`}><span>Description</span><textarea rows={4} value={project.description} onChange={(e) => patchProject(index, { description: e.target.value })} /></label>
-                  <label className={styles.field}><span>Highlight chips · comma separated</span><input value={toCsv(project.chips)} onChange={(e) => patchProject(index, { chips: fromCsv(e.target.value) })} placeholder="AI, Real-time, AWS" /></label>
-                  <label className={styles.field}><span>Tech stack · comma separated</span><input value={toCsv(project.stack)} onChange={(e) => patchProject(index, { stack: fromCsv(e.target.value) })} placeholder="Next.js, TypeScript, PostgreSQL" /></label>
-                  <label className={styles.field}><span>Card icon</span><select value={project.icon} onChange={(e) => patchProject(index, { icon: e.target.value as ProjectIconKey })}>{PROJECT_ICON_KEYS.map((icon) => <option value={icon} key={icon}>{iconLabels[icon]}</option>)}</select></label>
-                  <label className={styles.field}><span>Internal ID</span><input value={project.id} onChange={(e) => patchProject(index, { id: e.target.value })} /></label>
-                </div>
-              </article>
-            ))}
-          </div>
-        </section>
-
-        <div className={styles.saveBar}>
-          <div>{error ? <span className={styles.errorInline}>{error}</span> : notice ? <span className={styles.success}>{notice}</span> : <span>Changes are private until you press Save.</span>}</div>
-          <button type="button" onClick={save} disabled={saving}>{saving ? "Saving…" : "Save portfolio changes"}</button>
-        </div>
+    <section className={styles.panel}>
+      <SectionHead kicker="SITE" title="Identity, contact & CV" text="Core details used across the hero, footer, WhatsApp, email and CV buttons."/>
+      <div className={styles.formGrid}>
+        <Field label="Full name"><input value={content.identity.name} onChange={(e) => setContent((c) => ({ ...c, identity: { ...c.identity, name: e.target.value } }))}/></Field>
+        <Field label="Brand initials"><input value={content.identity.brandInitials} onChange={(e) => setContent((c) => ({ ...c, identity: { ...c.identity, brandInitials: e.target.value } }))}/></Field>
+        <Field label="First name"><input value={content.identity.firstName} onChange={(e) => setContent((c) => ({ ...c, identity: { ...c.identity, firstName: e.target.value } }))}/></Field>
+        <Field label="Last name"><input value={content.identity.lastName} onChange={(e) => setContent((c) => ({ ...c, identity: { ...c.identity, lastName: e.target.value } }))}/></Field>
+        <Field label="Location"><input value={content.identity.location} onChange={(e) => setContent((c) => ({ ...c, identity: { ...c.identity, location: e.target.value } }))}/></Field>
+        <Field label="Email"><input type="email" value={content.identity.email} onChange={(e) => setContent((c) => ({ ...c, identity: { ...c.identity, email: e.target.value } }))}/></Field>
+        <Field label="Phone"><input value={content.identity.phone} onChange={(e) => setContent((c) => ({ ...c, identity: { ...c.identity, phone: e.target.value } }))}/></Field>
+        <Field label="WhatsApp number" hint="Digits only, including country code. Example: 9471..."><input value={content.identity.whatsappNumber} onChange={(e) => setContent((c) => ({ ...c, identity: { ...c.identity, whatsappNumber: e.target.value } }))}/></Field>
+        <Field label="WhatsApp pre-filled message" full><textarea rows={2} value={content.identity.whatsappMessage} onChange={(e) => setContent((c) => ({ ...c, identity: { ...c.identity, whatsappMessage: e.target.value } }))}/></Field>
+        <Field label="GitHub profile URL"><input value={content.identity.githubUrl} onChange={(e) => setContent((c) => ({ ...c, identity: { ...c.identity, githubUrl: e.target.value } }))}/></Field>
+        <Field label="Footer tagline"><input value={content.identity.footerTagline} onChange={(e) => setContent((c) => ({ ...c, identity: { ...c.identity, footerTagline: e.target.value } }))}/></Field>
+        <Field label="CV URL" full hint="Google Drive URL or /cv/your-file.pdf"><input value={content.cvUrl} onChange={(e) => setContent((c) => ({ ...c, cvUrl: e.target.value }))}/></Field>
       </div>
-    </main>
-  );
+      <div className={styles.inlineActions}><a href={content.cvUrl || "#"} target="_blank" rel="noreferrer">Test CV link ↗</a></div>
+    </section>
+
+    <section className={styles.panel}>
+      <SectionHead kicker="SOCIAL" title="Social links" text="Add, edit, delete or reorder the profile links shown in the hero and footer." action={<button className={styles.addButton} type="button" onClick={() => setContent((c) => ({ ...c, socialLinks: [...c.socialLinks, newSocial()] }))}>+ Add social</button>}/>
+      <div className={styles.compactList}>{content.socialLinks.map((item, index) => <article className={styles.compactCard} key={item.id}><div className={styles.projectTop}><div className={styles.projectIndex}>{itemNumber(index)}</div><div className={styles.projectTopCopy}><strong>{item.label}</strong><span>{item.href}</span></div><OrderButtons index={index} total={content.socialLinks.length} label="social link" onMove={(d) => moveArray("socialLinks", index, d)} onDelete={() => removeArray("socialLinks", index, "social link")}/></div><div className={styles.formGrid}><Field label="Label"><input value={item.label} onChange={(e) => patchArray("socialLinks", index, { label: e.target.value })}/></Field><Field label="Icon"><select value={item.icon} onChange={(e) => patchArray("socialLinks", index, { icon: e.target.value as SocialLink["icon"] })}>{Object.entries(socialIconLabels).map(([key, label]) => <option key={key} value={key}>{label}</option>)}</select></Field><Field label="URL" full><input value={item.href} onChange={(e) => patchArray("socialLinks", index, { href: e.target.value })}/></Field></div></article>)}</div>
+    </section>
+
+    <section className={styles.panel}>
+      <SectionHead kicker="HERO" title="Hero content" text="Edit the first screen without changing its animation or layout."/>
+      <div className={styles.formGrid}>
+        <Field label="Status"><input value={content.hero.status} onChange={(e) => setContent((c) => ({ ...c, hero: { ...c.hero, status: e.target.value } }))}/></Field>
+        <Field label="Kicker"><input value={content.hero.kicker} onChange={(e) => setContent((c) => ({ ...c, hero: { ...c.hero, kicker: e.target.value } }))}/></Field>
+        <Field label="Rotating roles · comma separated" full><input value={toCsv(content.hero.roles)} onChange={(e) => setContent((c) => ({ ...c, hero: { ...c.hero, roles: fromCsv(e.target.value) } }))}/></Field>
+        <Field label="Hero description" full><textarea rows={3} value={content.hero.text} onChange={(e) => setContent((c) => ({ ...c, hero: { ...c.hero, text: e.target.value } }))}/></Field>
+        <Field label="Focus areas"><input value={content.hero.focusAreas} onChange={(e) => setContent((c) => ({ ...c, hero: { ...c.hero, focusAreas: e.target.value } }))}/></Field>
+        <Field label="Core stack"><input value={content.hero.coreStack} onChange={(e) => setContent((c) => ({ ...c, hero: { ...c.hero, coreStack: e.target.value } }))}/></Field>
+        <MediaField label="Hero portrait" value={content.hero.profileImageUrl} onChange={(url) => setContent((c) => ({ ...c, hero: { ...c.hero, profileImageUrl: url } }))}/>
+        <Field label="Tech marquee · comma separated" full><input value={toCsv(content.marquee)} onChange={(e) => setContent((c) => ({ ...c, marquee: fromCsv(e.target.value) }))}/></Field>
+      </div>
+    </section>
+
+    <section className={styles.panel}>
+      <SectionHead kicker="ABOUT" title="About section" text="Use **double asterisks** around words you want to keep bold in the paragraph text."/>
+      <HeadingFields value={content.about.heading} onChange={(heading) => setContent((c) => ({ ...c, about: { ...c.about, heading } }))}/>
+      <div className={styles.subHead}><strong>About paragraphs</strong><button className={styles.addButton} type="button" onClick={() => setContent((c) => ({ ...c, about: { ...c.about, paragraphs: [...c.about.paragraphs, "New paragraph"] } }))}>+ Add paragraph</button></div>
+      <div className={styles.compactList}>{content.about.paragraphs.map((paragraph, index) => <article className={styles.compactCard} key={`about-${index}`}><div className={styles.projectTop}><div className={styles.projectIndex}>{itemNumber(index)}</div><div className={styles.projectTopCopy}><strong>Paragraph {index + 1}</strong></div><div className={styles.orderButtons}><button type="button" disabled={index === 0} onClick={() => setContent((c) => { const next=[...c.about.paragraphs]; [next[index-1],next[index]]=[next[index],next[index-1]]; return {...c,about:{...c.about,paragraphs:next}}; })}>↑</button><button type="button" disabled={index === content.about.paragraphs.length - 1} onClick={() => setContent((c) => { const next=[...c.about.paragraphs]; [next[index+1],next[index]]=[next[index],next[index+1]]; return {...c,about:{...c.about,paragraphs:next}}; })}>↓</button><button className={styles.deleteButton} type="button" onClick={() => setContent((c) => ({ ...c, about: { ...c.about, paragraphs: c.about.paragraphs.filter((_, i) => i !== index) } }))}>Delete</button></div></div><Field label="Text" full><textarea rows={3} value={paragraph} onChange={(e) => setContent((c) => ({ ...c, about: { ...c.about, paragraphs: c.about.paragraphs.map((item, i) => i === index ? e.target.value : item) } }))}/></Field></article>)}</div>
+      <div className={styles.formGrid}>
+        <Field label="Curiosity value"><input value={content.about.curiosityValue} onChange={(e) => setContent((c) => ({ ...c, about: { ...c.about, curiosityValue: e.target.value } }))}/></Field>
+        <Field label="Curiosity label"><input value={content.about.curiosityLabel} onChange={(e) => setContent((c) => ({ ...c, about: { ...c.about, curiosityLabel: e.target.value } }))}/></Field>
+        <MediaField label="About portrait" value={content.about.imageUrl} onChange={(url) => setContent((c) => ({ ...c, about: { ...c.about, imageUrl: url } }))}/>
+      </div>
+    </section>
+
+    <section className={styles.panel}>
+      <SectionHead kicker="SKILLS" title="Skills & services" text="Everything in the capabilities section is editable here."/>
+      <HeadingFields value={content.skills.heading} onChange={(heading) => setContent((c) => ({ ...c, skills: { ...c.skills, heading } }))}/>
+      <Field label="Featured skills · comma separated" full><input value={toCsv(content.skills.featured)} onChange={(e) => setContent((c) => ({ ...c, skills: { ...c.skills, featured: fromCsv(e.target.value) } }))}/></Field>
+      <div className={styles.subHead}><strong>Skill groups</strong><button className={styles.addButton} type="button" onClick={() => setContent((c) => ({ ...c, skills: { ...c.skills, groups: [...c.skills.groups, newSkillGroup()] } }))}>+ Add group</button></div>
+      <div className={styles.compactList}>{content.skills.groups.map((group, index) => <article className={styles.compactCard} key={group.id}><div className={styles.projectTop}><div className={styles.projectIndex}>{itemNumber(index)}</div><div className={styles.projectTopCopy}><strong>{group.title}</strong><span>{group.items.length} skills</span></div><OrderButtons index={index} total={content.skills.groups.length} onMove={(d) => moveSkillGroup(index, d)} onDelete={() => removeSkillGroup(index)}/></div><div className={styles.formGrid}><Field label="Title"><input value={group.title} onChange={(e) => patchSkillGroup(index, { title: e.target.value })}/></Field><Field label="Icon"><select value={group.icon} onChange={(e) => patchSkillGroup(index, { icon: e.target.value as ContentIconKey })}>{CONTENT_ICON_KEYS.map((key) => <option value={key} key={key}>{iconLabels[key]}</option>)}</select></Field><Field label="Summary" full><textarea rows={2} value={group.summary} onChange={(e) => patchSkillGroup(index, { summary: e.target.value })}/></Field><Field label="Skills · comma separated" full><input value={toCsv(group.items)} onChange={(e) => patchSkillGroup(index, { items: fromCsv(e.target.value) })}/></Field></div></article>)}</div>
+      <div className={styles.subHead}><strong>Services</strong><button className={styles.addButton} type="button" onClick={() => setContent((c) => ({ ...c, skills: { ...c.skills, services: [...c.skills.services, newService()] } }))}>+ Add service</button></div>
+      <div className={styles.compactList}>{content.skills.services.map((service, index) => <article className={styles.compactCard} key={service.id}><div className={styles.projectTop}><div className={styles.projectIndex}>{itemNumber(index)}</div><div className={styles.projectTopCopy}><strong>{service.title}</strong></div><OrderButtons index={index} total={content.skills.services.length} onMove={(d) => moveService(index, d)} onDelete={() => removeService(index)}/></div><div className={styles.formGrid}><Field label="Title"><input value={service.title} onChange={(e) => patchService(index, { title: e.target.value })}/></Field><Field label="Icon"><select value={service.icon} onChange={(e) => patchService(index, { icon: e.target.value as ContentIconKey })}>{CONTENT_ICON_KEYS.map((key) => <option value={key} key={key}>{iconLabels[key]}</option>)}</select></Field><Field label="Description" full><textarea rows={2} value={service.text} onChange={(e) => patchService(index, { text: e.target.value })}/></Field></div></article>)}</div>
+    </section>
+
+    <section className={styles.projectsSection}>
+      <SectionHead kicker="PROJECTS" title={`${content.projects.length} project${content.projects.length === 1 ? "" : "s"}`} text="Add real screenshots when you have them. If Image is empty, the original developer-console visual stays exactly as the fallback." action={<button className={styles.addButton} type="button" onClick={() => setContent((c) => ({ ...c, projects: [...c.projects, newProject()] }))}>+ Add project</button>}/>
+      <div className={styles.panel}><HeadingFields value={content.projectsHeading} onChange={(projectsHeading) => setContent((c) => ({ ...c, projectsHeading }))}/></div>
+      <div className={styles.projectList}>{content.projects.map((project, index) => <article className={styles.projectCard} key={project.id}><div className={styles.projectTop}><div className={styles.projectIndex}>{projectNumber(index)}</div><div className={styles.projectTopCopy}><strong>{project.title || "Untitled project"}</strong><span>{project.category || "No category"}</span></div><OrderButtons index={index} total={content.projects.length} label="project" onMove={(d) => moveArray("projects", index, d)} onDelete={() => removeArray("projects", index, "project")}/></div><div className={styles.formGrid}><Field label="Project title"><input value={project.title} onChange={(e) => patchArray("projects", index, { title: e.target.value })}/></Field><Field label="Category"><input value={project.category} onChange={(e) => patchArray("projects", index, { category: e.target.value })}/></Field><Field label="Repository / project URL" full><input value={project.href} onChange={(e) => patchArray("projects", index, { href: e.target.value })}/></Field><Field label="Description" full><textarea rows={4} value={project.description} onChange={(e) => patchArray("projects", index, { description: e.target.value })}/></Field><Field label="Highlight chips · comma separated"><input value={toCsv(project.chips)} onChange={(e) => patchArray("projects", index, { chips: fromCsv(e.target.value) })}/></Field><Field label="Tech stack · comma separated"><input value={toCsv(project.stack)} onChange={(e) => patchArray("projects", index, { stack: fromCsv(e.target.value) })}/></Field><Field label="Card icon"><select value={project.icon} onChange={(e) => patchArray("projects", index, { icon: e.target.value as ContentIconKey })}>{CONTENT_ICON_KEYS.map((key) => <option value={key} key={key}>{iconLabels[key]}</option>)}</select></Field><Field label="Internal ID"><input value={project.id} onChange={(e) => patchArray("projects", index, { id: e.target.value })}/></Field><MediaField label="Real project screenshot" value={project.imageUrl} onChange={(url) => patchArray("projects", index, { imageUrl: url })} hint="JPG/PNG/WebP up to 4 MB. Leave empty to keep the current default console graphic."/></div></article>)}</div>
+    </section>
+
+    <section className={styles.panel}>
+      <SectionHead kicker="EDUCATION" title="Education" text="Add, edit, delete and reorder formal education milestones." action={<button className={styles.addButton} type="button" onClick={() => setContent((c) => ({ ...c, education: [...c.education, newEducation()] }))}>+ Add education</button>}/>
+      <HeadingFields value={content.educationHeading} onChange={(educationHeading) => setContent((c) => ({ ...c, educationHeading }))}/>
+      <div className={styles.compactList}>{content.education.map((item, index) => <article className={styles.compactCard} key={item.id}><div className={styles.projectTop}><div className={styles.projectIndex}>{itemNumber(index)}</div><div className={styles.projectTopCopy}><strong>{item.title}</strong><span>{item.period}</span></div><OrderButtons index={index} total={content.education.length} label="education item" onMove={(d) => moveArray("education", index, d)} onDelete={() => removeArray("education", index, "education item")}/></div><div className={styles.formGrid}><Field label="Period / institution"><input value={item.period} onChange={(e) => patchArray("education", index, { period: e.target.value })}/></Field><Field label="Icon"><select value={item.icon} onChange={(e) => patchArray("education", index, { icon: e.target.value as ContentIconKey })}>{CONTENT_ICON_KEYS.map((key) => <option value={key} key={key}>{iconLabels[key]}</option>)}</select></Field><Field label="Title"><input value={item.title} onChange={(e) => patchArray("education", index, { title: e.target.value })}/></Field><Field label="Place / stream"><input value={item.place} onChange={(e) => patchArray("education", index, { place: e.target.value })}/></Field><Field label="Description" full><textarea rows={3} value={item.text} onChange={(e) => patchArray("education", index, { text: e.target.value })}/></Field></div></article>)}</div>
+    </section>
+
+    <section className={styles.panel}>
+      <SectionHead kicker="EXPERIENCE" title="Experience" text="This section stays completely hidden on the public portfolio while there are no entries. Add one later and it appears automatically with matching styling." action={<button className={styles.addButton} type="button" onClick={() => setContent((c) => ({ ...c, experiences: [...c.experiences, newExperience()] }))}>+ Add experience</button>}/>
+      <HeadingFields value={content.experienceHeading} onChange={(experienceHeading) => setContent((c) => ({ ...c, experienceHeading }))}/>
+      {content.experiences.length === 0 ? <div className={styles.emptyState}>No experience entries yet · public section is hidden.</div> : null}
+      <div className={styles.compactList}>{content.experiences.map((item, index) => <article className={styles.compactCard} key={item.id}><div className={styles.projectTop}><div className={styles.projectIndex}>{itemNumber(index)}</div><div className={styles.projectTopCopy}><strong>{item.role}</strong><span>{item.company}</span></div><OrderButtons index={index} total={content.experiences.length} label="experience" onMove={(d) => moveArray("experiences", index, d)} onDelete={() => removeArray("experiences", index, "experience")}/></div><div className={styles.formGrid}><Field label="Role"><input value={item.role} onChange={(e) => patchArray("experiences", index, { role: e.target.value })}/></Field><Field label="Company"><input value={item.company} onChange={(e) => patchArray("experiences", index, { company: e.target.value })}/></Field><Field label="Period"><input value={item.period} onChange={(e) => patchArray("experiences", index, { period: e.target.value })}/></Field><Field label="Location"><input value={item.location} onChange={(e) => patchArray("experiences", index, { location: e.target.value })}/></Field><Field label="Description" full><textarea rows={3} value={item.description} onChange={(e) => patchArray("experiences", index, { description: e.target.value })}/></Field><Field label="Highlights · comma separated" full><input value={toCsv(item.highlights)} onChange={(e) => patchArray("experiences", index, { highlights: fromCsv(e.target.value) })}/></Field><MediaField label="Optional company / work image" value={item.imageUrl} onChange={(url) => patchArray("experiences", index, { imageUrl: url })}/></div></article>)}</div>
+    </section>
+
+    <section className={styles.panel}>
+      <SectionHead kicker="CERTIFICATES" title="Certificates" text="No certificate section is shown publicly until you add a certificate. Each item supports an image, content and optional credential link." action={<button className={styles.addButton} type="button" onClick={() => setContent((c) => ({ ...c, certificates: [...c.certificates, newCertificate()] }))}>+ Add certificate</button>}/>
+      <HeadingFields value={content.certificatesHeading} onChange={(certificatesHeading) => setContent((c) => ({ ...c, certificatesHeading }))}/>
+      {content.certificates.length === 0 ? <div className={styles.emptyState}>No certificates yet · public section is hidden.</div> : null}
+      <div className={styles.compactList}>{content.certificates.map((item, index) => <article className={styles.compactCard} key={item.id}><div className={styles.projectTop}><div className={styles.projectIndex}>{itemNumber(index)}</div><div className={styles.projectTopCopy}><strong>{item.title}</strong><span>{item.issuer}</span></div><OrderButtons index={index} total={content.certificates.length} label="certificate" onMove={(d) => moveArray("certificates", index, d)} onDelete={() => removeArray("certificates", index, "certificate")}/></div><div className={styles.formGrid}><Field label="Certificate title"><input value={item.title} onChange={(e) => patchArray("certificates", index, { title: e.target.value })}/></Field><Field label="Issuer"><input value={item.issuer} onChange={(e) => patchArray("certificates", index, { issuer: e.target.value })}/></Field><Field label="Date"><input value={item.date} onChange={(e) => patchArray("certificates", index, { date: e.target.value })}/></Field><Field label="Credential URL"><input value={item.credentialUrl || ""} onChange={(e) => patchArray("certificates", index, { credentialUrl: e.target.value })}/></Field><Field label="Description" full><textarea rows={3} value={item.description} onChange={(e) => patchArray("certificates", index, { description: e.target.value })}/></Field><MediaField label="Certificate image" value={item.imageUrl} onChange={(url) => patchArray("certificates", index, { imageUrl: url })} hint="Upload the certificate image/scan. It is automatically cropped to fit the portfolio card without stretching."/></div></article>)}</div>
+    </section>
+
+    <section className={styles.panel}>
+      <SectionHead kicker="FINAL SECTIONS" title="Photo break & contact" text="Edit the final visual statement and contact CTA."/>
+      <div className={styles.subHead}><strong>Photo break</strong></div>
+      <div className={styles.formGrid}><Field label="Eyebrow"><input value={content.photoBreak.eyebrow} onChange={(e) => setContent((c) => ({ ...c, photoBreak: { ...c.photoBreak, eyebrow: e.target.value } }))}/></Field><Field label="Title" hint="Press Enter in this field to create a line break."><textarea rows={2} value={content.photoBreak.title} onChange={(e) => setContent((c) => ({ ...c, photoBreak: { ...c.photoBreak, title: e.target.value } }))}/></Field><MediaField label="Photo break image" value={content.photoBreak.imageUrl} onChange={(url) => setContent((c) => ({ ...c, photoBreak: { ...c.photoBreak, imageUrl: url } }))}/></div>
+      <div className={styles.subHead}><strong>Contact</strong></div>
+      <div className={styles.formGrid}><Field label="Eyebrow"><input value={content.contact.eyebrow} onChange={(e) => setContent((c) => ({ ...c, contact: { ...c.contact, eyebrow: e.target.value } }))}/></Field><Field label="Heading"><input value={content.contact.title} onChange={(e) => setContent((c) => ({ ...c, contact: { ...c.contact, title: e.target.value } }))}/></Field><Field label="Accent text"><input value={content.contact.accent} onChange={(e) => setContent((c) => ({ ...c, contact: { ...c.contact, accent: e.target.value } }))}/></Field><Field label="WhatsApp button"><input value={content.contact.whatsappButton} onChange={(e) => setContent((c) => ({ ...c, contact: { ...c.contact, whatsappButton: e.target.value } }))}/></Field><Field label="Contact description" full><textarea rows={3} value={content.contact.text} onChange={(e) => setContent((c) => ({ ...c, contact: { ...c.contact, text: e.target.value } }))}/></Field><Field label="Email button"><input value={content.contact.emailButton} onChange={(e) => setContent((c) => ({ ...c, contact: { ...c.contact, emailButton: e.target.value } }))}/></Field><MediaField label="Contact image" value={content.contact.imageUrl} onChange={(url) => setContent((c) => ({ ...c, contact: { ...c.contact, imageUrl: url } }))}/></div>
+    </section>
+
+    <div className={styles.saveBar}><div>{error ? <span className={styles.errorInline}>{error}</span> : notice ? <span className={styles.success}>{notice}</span> : <span>Changes stay private until you press Save.</span>}</div><button type="button" onClick={save} disabled={saving}>{saving ? "Saving…" : "Save portfolio changes"}</button></div>
+  </div></main>;
 }

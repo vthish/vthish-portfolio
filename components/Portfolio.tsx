@@ -9,8 +9,8 @@ import {
   useScroll,
   useSpring,
 } from "motion/react";
-import { FormEvent, ReactNode, useEffect, useMemo, useRef, useState, type ComponentType } from "react";
-import { DEFAULT_PORTFOLIO_CONTENT, projectNumber, type PortfolioContent, type ProjectIconKey } from "@/lib/portfolio-content";
+import { FormEvent, ReactNode, useEffect, useRef, useState, type ComponentType } from "react";
+import { DEFAULT_PORTFOLIO_CONTENT, itemNumber, projectNumber, type ContentIconKey, type PortfolioContent, type ProjectIconKey, type SocialLink } from "@/lib/portfolio-content";
 
 type IconProps = { size?: number; className?: string };
 
@@ -103,13 +103,7 @@ const Icons = {
   ),
 };
 
-const socialLinks = [
-  { label: "GitHub", href: "https://github.com/vthish", Icon: Icons.github },
-  { label: "GitLab", href: "https://gitlab.com/vthish-dev", Icon: Icons.gitlab },
-  { label: "LinkedIn", href: "https://www.linkedin.com/in/venusha-thishan", Icon: Icons.linkedin },
-];
-
-const projectIconMap: Record<ProjectIconKey, ComponentType<IconProps>> = {
+const contentIconMap: Record<ContentIconKey, ComponentType<IconProps>> = {
   database: Icons.database,
   phone: Icons.phone,
   sparkles: Icons.sparkles,
@@ -117,89 +111,26 @@ const projectIconMap: Record<ProjectIconKey, ComponentType<IconProps>> = {
   cloud: Icons.cloud,
   layers: Icons.layers,
   code: Icons.code,
+  graduation: Icons.graduation,
+  certificate: Icons.certificate,
 };
 
-const skillGroups = [
-  {
-    title: "Programming Languages",
-    summary: "Languages I use to build practical applications across web, mobile and backend work.",
-    Icon: Icons.code,
-    items: ["TypeScript", "JavaScript", "Java", "Python", "Dart", "PHP", "C++", "C"],
-  },
-  {
-    title: "Web Development",
-    summary: "Frontend and full-stack technologies for modern, responsive and scalable web products.",
-    Icon: Icons.sparkles,
-    items: ["Next.js", "Node.js", "Nest.js", "HTML", "CSS", "Tailwind CSS", "Responsive UI"],
-  },
-  {
-    title: "Backend & Data",
-    summary: "Backend frameworks, databases and APIs used for structured, reliable application delivery.",
-    Icon: Icons.database,
-    items: ["Spring Boot", "FastAPI", "PostgreSQL", "MySQL", "Oracle", "Firebase Firestore", "Prisma ORM", "REST APIs"],
-  },
-  {
-    title: "Mobile App Development",
-    summary: "Cross-platform and Android-oriented mobile development for useful real-world products.",
-    Icon: Icons.phone,
-    items: ["Flutter", "Dart", "Java Android", "Firebase Auth", "Material Design", "MVVM", "Cross-platform Apps"],
-  },
-  {
-    title: "DevOps & Cloud",
-    summary: "Delivery-focused tooling that helps move projects from development into release and deployment.",
-    Icon: Icons.cloud,
-    items: ["AWS", "EC2", "S3", "AWS Amplify", "Docker", "Docker Compose", "GitLab CI/CD", "GitHub", "GitLab"],
-  },
-  {
-    title: "Tools & Workflow",
-    summary: "Day-to-day workflow strengths that improve collaboration, speed and product quality.",
-    Icon: Icons.brain,
-    items: ["Git", "UI Thinking", "Automation", "Problem Solving", "Team Collaboration"],
-  },
-];
+const projectIconMap: Record<ProjectIconKey, ComponentType<IconProps>> = contentIconMap;
 
-const featuredSkills = [
-  "Next.js",
-  "Node.js",
-  "Nest.js",
-  "Spring Boot",
-  "Flutter",
-  "Docker",
-  "AWS",
-  "PostgreSQL",
-  "TypeScript",
-  "Java",
-];
+const socialIconMap: Record<SocialLink["icon"], ComponentType<IconProps>> = {
+  github: Icons.github,
+  gitlab: Icons.gitlab,
+  linkedin: Icons.linkedin,
+  link: Icons.external,
+};
 
-const serviceCards = [
-  {
-    title: "Web Development",
-    text: "Modern responsive websites, dashboards and full-stack web apps using Next.js, Node.js, Nest.js and backend integrations.",
-    Icon: Icons.code,
-  },
-  {
-    title: "Mobile App Development",
-    text: "Cross-platform and Android-focused mobile application development with Flutter and practical product thinking.",
-    Icon: Icons.phone,
-  },
-  {
-    title: "DevOps & Deployment",
-    text: "Dockerized workflows, cloud deployment, CI/CD pipelines and release support for web and mobile products.",
-    Icon: Icons.cloud,
-  },
-];
-
-const roles = [
-  "Software Engineer",
-  "Full-Stack Developer",
-  "Web Developer",
-  "Mobile App Developer",
-  "DevOps-ready Builder",
-];
-
-const whatsappHref =
-  "https://wa.me/94717135237?text=" +
-  encodeURIComponent("Hi Venusha, I found your portfolio and I'd like to discuss a software opportunity with you.");
+function ManagedImage({ src, alt, className = "", eager = false }: { src: string; alt: string; className?: string; eager?: boolean }) {
+  const managedClass = `managed-fill-image ${className}`.trim();
+  if (/^https?:\/\//i.test(src)) {
+    return <img src={src} alt={alt} className={managedClass} loading={eager ? "eager" : "lazy"} />;
+  }
+  return <Image src={src} alt={alt} fill priority={eager} unoptimized={src.startsWith("/.netlify/functions/")} className={managedClass} sizes="(max-width: 900px) 100vw, 50vw" />;
+}
 
 const fadeUp = {
   hidden: { opacity: 0, y: 24 },
@@ -474,92 +405,45 @@ function InitialLoader() {
   );
 }
 
-function Chatbot({ projectCount }: { projectCount: number }) {
+function Chatbot({ content }: { content: PortfolioContent }) {
   const [open, setOpen] = useState(false);
   const [typing, setTyping] = useState(false);
   const [input, setInput] = useState("");
   const chatBodyRef = useRef<HTMLDivElement | null>(null);
+  const name = content.identity.firstName || content.identity.name;
+  const whatsappHref = `https://wa.me/${content.identity.whatsappNumber}?text=${encodeURIComponent(content.identity.whatsappMessage)}`;
   const [messages, setMessages] = useState([
-    {
-      from: "bot",
-      text: "Hi! I’m VT Assistant. Ask me about Venusha’s services, tech stack, projects, education or how to contact him.",
-    },
+    { from: "bot", text: `Hi! I’m VT Assistant. Ask me about ${name}’s services, tech stack, projects, education, experience, certificates or contact details.` },
   ]);
 
   useEffect(() => {
     if (!open) return;
-
     const frame = window.requestAnimationFrame(() => {
       const body = chatBodyRef.current;
-      if (!body) return;
-
-      body.scrollTo({
-        top: body.scrollHeight,
-        behavior: "smooth",
-      });
+      if (body) body.scrollTo({ top: body.scrollHeight, behavior: "smooth" });
     });
-
     return () => window.cancelAnimationFrame(frame);
   }, [messages, typing, open]);
 
   const reply = (text: string) => {
     const q = text.toLowerCase();
+    const allSkills = content.skills.groups.flatMap((group) => group.items).slice(0, 18).join(", ");
+    const services = content.skills.services.map((service) => service.title).join(", ");
+    const projectNames = content.projects.map((project) => project.title).join(", ");
+    const education = content.education.map((item) => `${item.title}${item.place ? ` — ${item.place}` : ""}`).join("; ");
 
-    if (q.includes("phone") || q.includes("number") || q.includes("call") || q.includes("contact no")) {
-      return "Venusha’s contact number is +94 71 713 5237. You can also use the Hire Me button to open WhatsApp with a ready-to-send message.";
-    }
-    if (q.includes("email") || q.includes("mail")) {
-      return "You can email Venusha at devthish17@gmail.com.";
-    }
-    if (q.includes("auto ledger") || q.includes("driving licence") || q.includes("traffic fine")) {
-      return "Auto Ledger is a full-stack digital driving-licence and traffic-fine platform. Its stack includes Flutter/Dart mobile apps, Next.js 16 + React 19 for the admin portal, NestJS 11 + TypeScript for the REST API, PostgreSQL + Prisma, AWS EC2/Amplify/S3, Docker and GitLab CI/CD.";
-    }
-    if (q.includes("pulseaid") || q.includes("blood donation")) {
-      return "PulseAid is an Android blood-donation management system built with Java, Firebase Firestore, Firebase Auth, Material Design XML components and MVVM architecture.";
-    }
-    if (q.includes("smart expense") || q.includes("expense categor")) {
-      return "Smart Expense AI uses Flutter/Dart on mobile, Firebase Firestore and Firebase Auth, plus a FastAPI/Python ML backend with Scikit-learn, Pandas and Docker.";
-    }
-    if (q.includes("hvtm") || q.includes("drug forecast") || q.includes("pharmaceutical")) {
-      return "HVTM Care is a pharmaceutical forecasting platform using Python, FastAPI, TensorFlow/Keras, Scikit-learn, XGBoost, Pandas/NumPy and a responsive HTML/CSS/JavaScript dashboard.";
-    }
-    if (q.includes("synapse") || q.includes("ai notes") || q.includes("note summar")) {
-      return "Synapse AI Notes uses Java 17, Spring Boot 3, MySQL, Spring Security, Maven, HTML/CSS/Tailwind CSS, Vanilla JavaScript and the Hugging Face Inference API.";
-    }
-    if (q.includes("web") || q.includes("website") || q.includes("frontend") || q.includes("backend")) {
-      return "Yes. Venusha builds responsive websites, dashboards and full-stack applications using Next.js, Node.js, Nest.js, Spring Boot, FastAPI, TypeScript/JavaScript and relational or Firebase-backed data layers.";
-    }
-    if (q.includes("mobile") || q.includes("android") || q.includes("flutter") || q.includes("app")) {
-      return "Venusha develops mobile applications with Flutter/Dart and Java Android, including Firebase authentication/data integration, Material Design and MVVM-style architecture where appropriate.";
-    }
-    if (q.includes("devops") || q.includes("docker") || q.includes("deploy") || q.includes("aws") || q.includes("ci/cd")) {
-      return "Venusha can help with Docker and Docker Compose, AWS EC2/S3/Amplify, GitLab CI/CD, GitHub/GitLab workflows and application deployment.";
-    }
-    if (q.includes("service") || q.includes("offer") || q.includes("do you do") || q.includes("what do you do")) {
-      return "Venusha offers web development, mobile app development, backend/API development and DevOps/deployment support. His stack covers modern JavaScript/TypeScript, Java, Python, Flutter, databases and cloud tooling.";
-    }
-    if (q.includes("skill") || q.includes("stack") || q.includes("language") || q.includes("framework")) {
-      return "Core skills include TypeScript, JavaScript, Java, Python, Dart, PHP, C++, C, Next.js, Node.js, Nest.js, Spring Boot, FastAPI, Flutter, Firebase, Docker, PostgreSQL, MySQL, Oracle, Prisma ORM, AWS, GitHub/GitLab and CI/CD.";
-    }
-    if (q.includes("ai") || q.includes("artificial intelligence")) {
-      return "Venusha uses modern AI tools as a helpful part of his development workflow and has also built projects that integrate AI/ML services, while his broader focus remains software engineering across web, mobile and DevOps delivery.";
-    }
-    if (q.includes("project") || q.includes("github") || q.includes("repository") || q.includes("repo")) {
-      return `This portfolio currently highlights ${projectCount} public projects across full-stack web, Android, Flutter, machine learning, healthcare, safety and automation. Open the Projects section to see each project’s tech stack and repository.`;
-    }
-    if (q.includes("education") || q.includes("nibm") || q.includes("study")) {
-      return "Venusha studied Software Engineering at NIBM Galle, including a Diploma and Higher National Diploma, after completing G.C.E. A/L in the Technology stream.";
-    }
-    if (q.includes("hire") || q.includes("contact") || q.includes("whatsapp") || q.includes("available")) {
-      return "For work opportunities, use the Hire Me / WhatsApp button, call +94 71 713 5237, or email devthish17@gmail.com.";
-    }
-    if (q.includes("cv") || q.includes("resume")) {
-      return "Use the View CV button near the top of the portfolio to open Venusha’s CV.";
-    }
-    if (q.includes("location") || q.includes("where") || q.includes("galle")) {
-      return "Venusha is based in Galle, Sri Lanka.";
-    }
-    return "I can help with Venusha’s services, skills, project tech stacks, education, phone number, email, CV or WhatsApp contact. Try asking ‘What stack does Auto Ledger use?’";
+    if (q.includes("phone") || q.includes("number") || q.includes("call")) return `${name}’s contact number is ${content.identity.phone}. You can also use the Hire Me button to open WhatsApp with a ready-to-send message.`;
+    if (q.includes("email") || q.includes("mail")) return `You can email ${name} at ${content.identity.email}.`;
+    if (q.includes("service") || q.includes("offer") || q.includes("what do you do")) return services ? `${name} currently highlights these services: ${services}.` : "Open the Skills section to see current capabilities.";
+    if (q.includes("skill") || q.includes("stack") || q.includes("language") || q.includes("framework")) return allSkills ? `Current portfolio skills include ${allSkills}.` : "Open the Skills section to see the current stack.";
+    if (q.includes("project") || q.includes("github") || q.includes("repository") || q.includes("repo")) return content.projects.length ? `This portfolio currently highlights ${content.projects.length} project${content.projects.length === 1 ? "" : "s"}: ${projectNames}. Open Projects to see screenshots, stacks and links.` : "There are no public projects listed right now.";
+    if (q.includes("education") || q.includes("study")) return education ? `Education currently listed: ${education}.` : "There are no education entries listed right now.";
+    if (q.includes("experience") || q.includes("work history") || q.includes("intern")) return content.experiences.length ? `Current experience includes ${content.experiences.map((item) => `${item.role} at ${item.company}`).join("; ")}.` : "No professional experience entries are published on the portfolio yet.";
+    if (q.includes("certificate") || q.includes("certification") || q.includes("credential")) return content.certificates.length ? `Certificates currently published: ${content.certificates.map((item) => `${item.title}${item.issuer ? ` — ${item.issuer}` : ""}`).join("; ")}.` : "No certificates are published on the portfolio yet.";
+    if (q.includes("hire") || q.includes("contact") || q.includes("whatsapp") || q.includes("available")) return `For work opportunities, use the Hire Me / WhatsApp button, call ${content.identity.phone}, or email ${content.identity.email}.`;
+    if (q.includes("cv") || q.includes("resume")) return `Use the View CV button near the top of the portfolio to open ${name}’s current CV.`;
+    if (q.includes("location") || q.includes("where")) return `${name} is based in ${content.identity.location}.`;
+    return `I can help with ${name}’s services, skills, projects, education, experience, certificates, CV or contact details.`;
   };
 
   const send = (text: string) => {
@@ -574,85 +458,50 @@ function Chatbot({ projectCount }: { projectCount: number }) {
     }, 520);
   };
 
-  const submit = (e: FormEvent) => {
-    e.preventDefault();
-    send(input);
-  };
-
+  const submit = (e: FormEvent) => { e.preventDefault(); send(input); };
   const quickQuestions = [
     { label: "Services", prompt: "What services do you offer?", Icon: Icons.layers },
-    { label: "Mobile apps", prompt: "Can you build a mobile app?", Icon: Icons.phone },
-    { label: "Skills", prompt: "Show skills", Icon: Icons.code },
-    { label: "Contact", prompt: "How can I contact Venusha?", Icon: Icons.message },
+    { label: "Projects", prompt: "Show projects", Icon: Icons.code },
+    { label: "Skills", prompt: "Show skills", Icon: Icons.sparkles },
+    { label: "Contact", prompt: `How can I contact ${name}?`, Icon: Icons.message },
   ];
 
   return (
     <>
       <AnimatePresence>
         {open && (
-          <motion.aside
-            className="chat-panel"
-            initial={{ opacity: 0, y: 28, scale: 0.94 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 18, scale: 0.96 }}
-            transition={{ type: "spring", stiffness: 350, damping: 28 }}
-            aria-label="VT portfolio assistant"
-          >
+          <motion.aside className="chat-panel" initial={{ opacity: 0, y: 28, scale: 0.94 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 18, scale: 0.96 }} transition={{ type: "spring", stiffness: 350, damping: 28 }} aria-label="VT portfolio assistant">
             <div className="chat-head">
               <div className="chat-avatar"><Icons.bot size={19}/><span className="chat-avatar-orbit" /></div>
-              <div className="chat-head-copy">
-                <strong>VT Assistant</strong>
-                <span><i /> Online · Portfolio guide</span>
-              </div>
+              <div className="chat-head-copy"><strong>VT Assistant</strong><span><i /> Online · Portfolio guide</span></div>
               <button className="chat-close" onClick={() => setOpen(false)} aria-label="Close chatbot"><Icons.close size={18}/></button>
             </div>
-            <div className="chat-intro">
-              <div className="chat-intro-icon"><Icons.sparkles size={16}/></div>
-              <div><strong>Ask anything about Venusha</strong><span>Services, skills, projects, education or contact details.</span></div>
-            </div>
+            <div className="chat-intro"><div className="chat-intro-icon"><Icons.sparkles size={16}/></div><div><strong>Ask anything about {name}</strong><span>Services, skills, projects, credentials or contact details.</span></div></div>
             <div className="chat-body" ref={chatBodyRef}>
               {messages.map((message, index) => (
-                <motion.div
-                  key={`${message.from}-${index}`}
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className={`chat-message ${message.from}`}
-                >
+                <motion.div key={`${message.from}-${index}`} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className={`chat-message ${message.from}`}>
                   {message.from === "bot" && <span className="message-avatar"><Icons.bot size={13}/></span>}
                   <span>{message.text}</span>
                 </motion.div>
               ))}
               {typing && <div className="typing"><span/><span/><span/></div>}
             </div>
-            <div className="quick-actions">
-              {quickQuestions.map(({ label, prompt, Icon: QuickIcon }) => (
-                <button key={label} onClick={() => send(prompt)}><QuickIcon size={14}/><span>{label}</span></button>
-              ))}
-            </div>
-            <div className="chat-contact-row">
-              <a href={whatsappHref} target="_blank" rel="noreferrer"><Icons.message size={14}/> WhatsApp</a>
-              <a href="mailto:devthish17@gmail.com"><Icons.mail size={14}/> Email</a>
-            </div>
-            <form className="chat-input" onSubmit={submit}>
-              <div className="chat-input-shell"><Icons.message size={15}/><input value={input} onChange={(e) => setInput(e.target.value)} placeholder="Ask about Venusha..." aria-label="Chat message" /></div>
-              <button type="submit" aria-label="Send message"><Icons.send size={17}/></button>
-            </form>
+            <div className="quick-actions">{quickQuestions.map(({ label, prompt, Icon: QuickIcon }) => <button key={label} onClick={() => send(prompt)}><QuickIcon size={14}/><span>{label}</span></button>)}</div>
+            <div className="chat-contact-row"><a href={whatsappHref} target="_blank" rel="noreferrer"><Icons.message size={14}/> WhatsApp</a><a href={`mailto:${content.identity.email}`}><Icons.mail size={14}/> Email</a></div>
+            <form className="chat-input" onSubmit={submit}><div className="chat-input-shell"><Icons.message size={15}/><input value={input} onChange={(e) => setInput(e.target.value)} placeholder={`Ask about ${name}...`} aria-label="Chat message" /></div><button type="submit" aria-label="Send message"><Icons.send size={17}/></button></form>
           </motion.aside>
         )}
       </AnimatePresence>
-
-      <motion.button
-        className="chat-launcher"
-        onClick={() => setOpen((v) => !v)}
-        whileHover={{ scale: 1.08 }}
-        whileTap={{ scale: 0.92 }}
-        aria-label={open ? "Close chatbot" : "Open chatbot"}
-      >
-        <span className="chat-ping" />
-        {open ? <Icons.close size={21}/> : <Icons.bot size={22}/>}      
+      <motion.button className="chat-launcher" onClick={() => setOpen((v) => !v)} whileHover={{ scale: 1.08 }} whileTap={{ scale: 0.92 }} aria-label={open ? "Close chatbot" : "Open chatbot"}>
+        <span className="chat-ping" />{open ? <Icons.close size={21}/> : <Icons.bot size={22}/>}
       </motion.button>
     </>
   );
+}
+
+function RichText({ text }: { text: string }) {
+  const parts = text.split(/(\*\*[^*]+\*\*)/g);
+  return <>{parts.map((part, index) => part.startsWith("**") && part.endsWith("**") ? <strong key={index}>{part.slice(2, -2)}</strong> : <span key={index}>{part}</span>)}</>;
 }
 
 export default function Portfolio() {
@@ -671,40 +520,23 @@ export default function Portfolio() {
 
   useEffect(() => {
     setMounted(true);
-    const roleTimer = window.setInterval(() => setRoleIndex((i) => (i + 1) % roles.length), 2600);
-    const move = (e: MouseEvent) => {
-      mouseX.set(e.clientX);
-      mouseY.set(e.clientY);
-    };
+    const roleTimer = window.setInterval(() => {
+      setRoleIndex((i) => {
+        const roleCount = Math.max(1, portfolioContent.hero.roles.length);
+        return (i + 1) % roleCount;
+      });
+    }, 2600);
+    const move = (e: MouseEvent) => { mouseX.set(e.clientX); mouseY.set(e.clientY); };
     window.addEventListener("mousemove", move, { passive: true });
-    return () => {
-      window.clearInterval(roleTimer);
-      window.removeEventListener("mousemove", move);
-    };
-  }, [mouseX, mouseY]);
+    return () => { window.clearInterval(roleTimer); window.removeEventListener("mousemove", move); };
+  }, [mouseX, mouseY, portfolioContent.hero.roles.length]);
 
   useEffect(() => {
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-
-    if (reducedMotion) {
-      setPageVisible(true);
-      setShowLoader(false);
-      return;
-    }
-
-    // Keep the page locked until the loader has fully faded out.
-    // The hero starts settling behind the opaque loader first, which avoids
-    // the visible jump that can happen when both layers start at once.
+    if (reducedMotion) { setPageVisible(true); setShowLoader(false); return; }
     document.documentElement.classList.add("portfolio-loading");
-
-    const revealTimer = window.setTimeout(() => {
-      setPageVisible(true);
-    }, 2180);
-
-    const exitTimer = window.setTimeout(() => {
-      setShowLoader(false);
-    }, 2580);
-
+    const revealTimer = window.setTimeout(() => setPageVisible(true), 2180);
+    const exitTimer = window.setTimeout(() => setShowLoader(false), 2580);
     return () => {
       window.clearTimeout(revealTimer);
       window.clearTimeout(exitTimer);
@@ -714,66 +546,56 @@ export default function Portfolio() {
 
   useEffect(() => {
     let active = true;
-
     fetch("/.netlify/functions/portfolio-content", { cache: "no-store" })
-      .then((response) => (response.ok ? response.json() : Promise.reject(new Error("content unavailable"))))
-      .then((content: PortfolioContent) => {
-        if (active && content?.cvUrl && Array.isArray(content.projects)) setPortfolioContent(content);
-      })
-      .catch(() => {
-        // Keep the code defaults if the content service is temporarily unavailable.
-      });
-
+      .then((response) => response.ok ? response.json() : Promise.reject(new Error("content unavailable")))
+      .then((content: PortfolioContent) => { if (active && content?.cvUrl && Array.isArray(content.projects)) setPortfolioContent(content); })
+      .catch(() => undefined);
     return () => { active = false; };
   }, []);
 
-  const projects = portfolioContent.projects;
-  const cvUrl = portfolioContent.cvUrl;
+  useEffect(() => {
+    if (roleIndex >= portfolioContent.hero.roles.length) setRoleIndex(0);
+  }, [portfolioContent.hero.roles.length, roleIndex]);
 
-  const marquee = useMemo(
-    () => ["TypeScript", "Next.js", "Node.js", "Nest.js", "Java", "Spring Boot", "Flutter", "Docker", "PostgreSQL", "AWS", "CI/CD"],
-    []
-  );
+  const content = portfolioContent;
+  const projects = content.projects;
+  const roles = content.hero.roles.length ? content.hero.roles : ["Software Engineer"];
+  const cvUrl = content.cvUrl;
+  const whatsappHref = `https://wa.me/${content.identity.whatsappNumber}?text=${encodeURIComponent(content.identity.whatsappMessage)}`;
+  const socialLinks = content.socialLinks;
+  const navItems = [
+    ["About", "#about"],
+    ["Skills", "#skills"],
+    ["Projects", "#projects"],
+    ["Education", "#education"],
+    ...(content.experiences.length ? [["Experience", "#experience"]] : []),
+    ...(content.certificates.length ? [["Certificates", "#certificates"]] : []),
+  ];
+  const mobileNavItems = [...navItems, ["Contact", "#contact"]];
 
   return (
     <MotionConfig reducedMotion="user">
       <main className="site-shell">
-        <AnimatePresence
-          onExitComplete={() => document.documentElement.classList.remove("portfolio-loading")}
-        >
+        <AnimatePresence onExitComplete={() => document.documentElement.classList.remove("portfolio-loading")}>
           {showLoader ? <InitialLoader /> : null}
         </AnimatePresence>
         <motion.div className="scroll-progress" style={{ scaleX }} />
-        {mounted && (
-          <motion.div className="cursor-glow" style={{ x: smoothX, y: smoothY }} aria-hidden="true" />
-        )}
+        {mounted && <motion.div className="cursor-glow" style={{ x: smoothX, y: smoothY }} aria-hidden="true" />}
         <div className="noise" aria-hidden="true" />
         <NetworkBackground />
         <div className="ambient ambient-one" aria-hidden="true" />
         <div className="ambient ambient-two" aria-hidden="true" />
 
-        <motion.header
-          className="nav-wrap"
-          initial={false}
-          animate={pageVisible ? { opacity: 1 } : { opacity: 0 }}
-          transition={{ duration: 0.72, ease: [0.22, 1, 0.36, 1] }}
-        >
-          <a className="brand" href="#top" aria-label="Venusha Thishan home">
-            <span className="brand-mark">VT</span>
-            <span className="brand-copy">VENUSHA<br/><small>THISHAN</small></span>
+        <motion.header className="nav-wrap" initial={false} animate={pageVisible ? { opacity: 1 } : { opacity: 0 }} transition={{ duration: 0.72, ease: [0.22, 1, 0.36, 1] }}>
+          <a className="brand" href="#top" aria-label={`${content.identity.name} home`}>
+            <span className="brand-mark">{content.identity.brandInitials}</span>
+            <span className="brand-copy">{content.identity.firstName.toUpperCase()}<br/><small>{content.identity.lastName.toUpperCase()}</small></span>
           </a>
           <nav className="desktop-nav" aria-label="Main navigation">
-            {[
-              ["About", "#about"],
-              ["Skills", "#skills"],
-              ["Projects", "#projects"],
-              ["Education", "#education"],
-            ].map(([label, href]) => <a key={href} href={href}>{label}</a>)}
+            {navItems.map(([label, href]) => <a key={href} href={href}>{label}</a>)}
           </nav>
           <div className="nav-actions">
-            <MagneticLink className="nav-hire" href={whatsappHref} external>
-              <Icons.message size={16}/> Hire me
-            </MagneticLink>
+            <MagneticLink className="nav-hire" href={whatsappHref} external><Icons.message size={16}/> Hire me</MagneticLink>
             <button className="menu-button" onClick={() => setMenuOpen(true)} aria-label="Open menu"><Icons.menu/></button>
           </div>
         </motion.header>
@@ -783,15 +605,9 @@ export default function Portfolio() {
             <motion.div className="mobile-menu" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
               <button className="mobile-menu-close" onClick={() => setMenuOpen(false)} aria-label="Close menu"><Icons.close size={26}/></button>
               <div className="mobile-menu-links">
-                {[
-                  ["01", "About", "#about"],
-                  ["02", "Skills", "#skills"],
-                  ["03", "Projects", "#projects"],
-                  ["04", "Education", "#education"],
-                  ["05", "Contact", "#contact"],
-                ].map(([n, label, href], i) => (
+                {mobileNavItems.map(([label, href], i) => (
                   <motion.a key={href} href={href} onClick={() => setMenuOpen(false)} initial={{ opacity: 0, x: -24 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.06 }}>
-                    <span>{n}</span>{label}
+                    <span>{itemNumber(i)}</span>{label}
                   </motion.a>
                 ))}
               </div>
@@ -801,67 +617,45 @@ export default function Portfolio() {
 
         <section className="hero" id="top">
           <div className="hero-grid" aria-hidden="true" />
-          <motion.div
-            className="hero-copy"
-            initial={false}
-            animate={pageVisible ? { opacity: 1, y: 0 } : { opacity: 0, y: 18 }}
-            transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
-          >
-            <div className="status-pill"><span /> OPEN TO SOFTWARE OPPORTUNITIES</div>
-            <p className="hero-kicker">Hello, I’m</p>
-            <h1>Venusha<br/><span>Thishan.</span></h1>
+          <motion.div className="hero-copy" initial={false} animate={pageVisible ? { opacity: 1, y: 0 } : { opacity: 0, y: 18 }} transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}>
+            <div className="status-pill"><span /> {content.hero.status}</div>
+            <p className="hero-kicker">{content.hero.kicker}</p>
+            <h1>{content.identity.firstName}<br/><span>{content.identity.lastName}.</span></h1>
             <div className="role-line">
               <span>I build as a</span>
               <div className="role-window">
                 <AnimatePresence mode="wait">
-                  <motion.strong key={roles[roleIndex]} initial={{ y: 22, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: -22, opacity: 0 }} transition={{ duration: 0.35 }}>
-                    {roles[roleIndex]}
+                  <motion.strong key={roles[roleIndex] || roles[0]} initial={{ y: 22, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: -22, opacity: 0 }} transition={{ duration: 0.35 }}>
+                    {roles[roleIndex] || roles[0]}
                   </motion.strong>
                 </AnimatePresence>
               </div>
             </div>
-            <p className="hero-text">
-              I build practical digital products across web, mobile and DevOps — combining clean engineering, polished interfaces and reliable delivery for real-world use.
-            </p>
+            <p className="hero-text">{content.hero.text}</p>
             <div className="hero-actions">
               <MagneticLink href="#projects" className="primary-btn">Explore my work <Icons.arrow size={18}/></MagneticLink>
-              <MagneticLink href={cvUrl} className="ghost-btn" external>
-                <Icons.download size={18}/> View CV
-              </MagneticLink>
+              <MagneticLink href={cvUrl} className="ghost-btn" external><Icons.download size={18}/> View CV</MagneticLink>
             </div>
             <div className="hero-socials">
-              {socialLinks.map(({ label, href, Icon: SocialIcon }) => (
-                <a key={label} href={href} target="_blank" rel="noreferrer" aria-label={label}>
-                  <SocialIcon size={18}/><span>{label}</span>
-                </a>
-              ))}
-              <small>Galle, Sri Lanka</small>
+              {socialLinks.map((item) => {
+                const SocialIcon = socialIconMap[item.icon] || Icons.external;
+                return <a key={item.id} href={item.href} target="_blank" rel="noreferrer" aria-label={item.label}><SocialIcon size={18}/><span>{item.label}</span></a>;
+              })}
+              <small>{content.identity.location}</small>
             </div>
           </motion.div>
 
-          <motion.div
-            className="hero-visual"
-            initial={false}
-            animate={pageVisible ? { opacity: 1, scale: 1, x: 0 } : { opacity: 0, scale: 0.975, x: 16 }}
-            transition={{ duration: 1.0, ease: [0.22, 1, 0.36, 1] }}
-          >
-            <div className="portrait-orbit orbit-one" />
-            <div className="portrait-orbit orbit-two" />
+          <motion.div className="hero-visual" initial={false} animate={pageVisible ? { opacity: 1, scale: 1, x: 0 } : { opacity: 0, scale: 0.975, x: 16 }} transition={{ duration: 1.0, ease: [0.22, 1, 0.36, 1] }}>
+            <div className="portrait-orbit orbit-one" /><div className="portrait-orbit orbit-two" />
             <motion.div className="portrait-card" whileHover={{ rotate: 0, y: -6 }} transition={{ type: "spring", stiffness: 180, damping: 18 }}>
-              <div className="portrait-frame">
-                <Image src="/images/profile-main.webp" alt="Venusha Thishan" fill priority sizes="(max-width: 900px) 80vw, 42vw" />
-                <div className="portrait-overlay" />
-              </div>
-              <div className="portrait-caption">
-                <span>Based in</span>
-                <strong><Icons.pin size={14}/> Galle / Sri Lanka</strong>
-              </div>
+              <div className="portrait-frame"><ManagedImage src={content.hero.profileImageUrl} alt={content.identity.name} eager /><div className="portrait-overlay" /></div>
+              <div className="portrait-caption"><span>Based in</span><strong><Icons.pin size={14}/> {content.identity.location.replace(", ", " / ")}</strong></div>
             </motion.div>
             <motion.div className="floating-badge badge-one" animate={{ y: [0, -10, 0] }} transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}>
-              <Icons.sparkles size={17}/><span><small>FOCUS AREAS</small>Web • Mobile • DevOps</span>
+              <Icons.sparkles size={17}/><span><small>FOCUS AREAS</small>{content.hero.focusAreas}</span>
             </motion.div>
             <motion.div className="floating-badge badge-two" animate={{ y: [0, 9, 0] }} transition={{ duration: 4.8, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}>
-              <span className="terminal-dot">&lt;/&gt;</span><span><small>CORE STACK</small>Node.js • Nest.js • Next.js</span>
+              <span className="terminal-dot">&lt;/&gt;</span><span><small>CORE STACK</small>{content.hero.coreStack}</span>
             </motion.div>
           </motion.div>
 
@@ -870,31 +664,28 @@ export default function Portfolio() {
 
         <div className="marquee-wrap" aria-label="Technology stack">
           <motion.div className="marquee-track" animate={{ x: ["0%", "-50%"] }} transition={{ duration: 26, repeat: Infinity, ease: "linear" }}>
-            {[...marquee, ...marquee].map((item, i) => <span key={`${item}-${i}`}><i>✦</i>{item}</span>)}
+            {[...content.marquee, ...content.marquee].map((item, i) => <span key={`${item}-${i}`}><i>✦</i>{item}</span>)}
           </motion.div>
         </div>
 
         <section className="section about-section" id="about">
-          <SectionTitle eyebrow="About me" title="Engineering ideas into real products." text="I enjoy moving from an idea to a working product — combining software engineering, design awareness and practical automation to solve useful problems." />
+          <SectionTitle {...content.about.heading} />
           <div className="about-grid">
             <motion.div className="about-photo" initial={{ opacity: 0, x: -30 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 0.7 }}>
-              <Image src="/images/profile-mono.webp" alt="Black and white portrait of Venusha Thishan" fill sizes="(max-width: 900px) 100vw, 36vw" />
+              <ManagedImage src={content.about.imageUrl} alt={`Portrait of ${content.identity.name}`} />
               <div className="photo-index">/ 01</div>
             </motion.div>
             <div className="about-copy">
-              <motion.p initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUp} transition={{ duration: 0.6 }}>
-                My toolkit spans <strong>TypeScript, JavaScript, Java, Python, Dart, Next.js, Node.js, Nest.js, Spring Boot, Flutter, Docker, PostgreSQL, Oracle, Prisma, AWS and CI/CD</strong>.
-              </motion.p>
-              <motion.p initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUp} transition={{ duration: 0.6, delay: 0.08 }}>
-                I build for <strong>web development, mobile app development and DevOps delivery</strong> — focusing on software that is clean, modern, scalable and useful in day-to-day business or product environments. I also use modern AI tools when they are useful for research, debugging, documentation and faster iteration.
-              </motion.p>
+              {content.about.paragraphs.map((paragraph, index) => (
+                <motion.p key={`${paragraph.slice(0, 30)}-${index}`} initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUp} transition={{ duration: 0.6, delay: index * 0.08 }}><RichText text={paragraph}/></motion.p>
+              ))}
               <div className="metric-grid">
                 <div><strong>{String(projects.length).padStart(2, "0")}</strong><span>GitHub projects<br/>featured</span></div>
-                <div><strong>03</strong><span>Education<br/>milestones</span></div>
-                <div><strong>∞</strong><span>Curiosity for<br/>building</span></div>
+                <div><strong>{String(content.education.length).padStart(2, "0")}</strong><span>Education<br/>milestones</span></div>
+                <div><strong>{content.about.curiosityValue}</strong><span>{content.about.curiosityLabel}</span></div>
               </div>
               <div className="about-contact-strip">
-                <a href="mailto:devthish17@gmail.com"><Icons.mail size={16}/> devthish17@gmail.com</a>
+                <a href={`mailto:${content.identity.email}`}><Icons.mail size={16}/> {content.identity.email}</a>
                 <a href={whatsappHref} target="_blank" rel="noreferrer"><Icons.message size={16}/> WhatsApp</a>
               </div>
             </div>
@@ -902,167 +693,137 @@ export default function Portfolio() {
         </section>
 
         <section className="section skills-section" id="skills">
-          <SectionTitle eyebrow="Capabilities" title="Skills that cover build, launch and scale." text="A clearer view of the technologies, frameworks and services I work with across web, mobile and DevOps." />
-          <div className="skills-spotlight">
-            {featuredSkills.map((item) => <span key={item}>{item}</span>)}
-          </div>
+          <SectionTitle {...content.skills.heading} />
+          <div className="skills-spotlight">{content.skills.featured.map((item) => <span key={item}>{item}</span>)}</div>
           <div className="skill-grid">
-            {skillGroups.map(({ title, summary, Icon: SkillIcon, items }, i) => (
-              <motion.article
-                className="skill-card"
-                key={title}
-                initial={{ opacity: 0, y: 24 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, margin: "-80px" }}
-                transition={{ duration: 0.5, delay: i * 0.06 }}
-                whileHover={{ y: -6 }}
-              >
-                <div className="skill-icon"><SkillIcon size={22}/></div>
-                <h3>{title}</h3>
-                <p className="skill-summary">{summary}</p>
-                <div className="skill-tags">{items.map((item) => <span key={item}>{item}</span>)}</div>
-              </motion.article>
-            ))}
+            {content.skills.groups.map((group, i) => {
+              const SkillIcon = contentIconMap[group.icon] || Icons.code;
+              return (
+                <motion.article className="skill-card" key={group.id} initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-80px" }} transition={{ duration: 0.5, delay: i * 0.06 }} whileHover={{ y: -6 }}>
+                  <div className="skill-icon"><SkillIcon size={22}/></div><h3>{group.title}</h3><p className="skill-summary">{group.summary}</p><div className="skill-tags">{group.items.map((item) => <span key={item}>{item}</span>)}</div>
+                </motion.article>
+              );
+            })}
           </div>
           <div className="service-grid">
-            {serviceCards.map(({ title, text, Icon: ServiceIcon }, index) => (
-              <motion.article
-                className="service-card"
-                key={title}
-                initial={{ opacity: 0, y: 22 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, margin: "-80px" }}
-                transition={{ duration: 0.5, delay: index * 0.07 }}
-              >
-                <div className="service-icon"><ServiceIcon size={20} /></div>
-                <h3>{title}</h3>
-                <p>{text}</p>
-              </motion.article>
-            ))}
+            {content.skills.services.map((service, index) => {
+              const ServiceIcon = contentIconMap[service.icon] || Icons.code;
+              return <motion.article className="service-card" key={service.id} initial={{ opacity: 0, y: 22 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-80px" }} transition={{ duration: 0.5, delay: index * 0.07 }}><div className="service-icon"><ServiceIcon size={20} /></div><h3>{service.title}</h3><p>{service.text}</p></motion.article>;
+            })}
           </div>
         </section>
 
         <section className="section projects-section" id="projects">
           <div className="projects-heading-row">
-            <SectionTitle eyebrow="Selected work" title="Projects that show the range." text="A selection of public repositories across mobile, automation, finance, healthcare, safety and productivity." />
-            <a className="text-link" href="https://github.com/vthish" target="_blank" rel="noreferrer">All GitHub projects <Icons.arrow size={16}/></a>
+            <SectionTitle {...content.projectsHeading} />
+            <a className="text-link" href={content.identity.githubUrl} target="_blank" rel="noreferrer">All GitHub projects <Icons.arrow size={16}/></a>
           </div>
           <div className="projects-list">
             {projects.map((project, index) => {
               const ProjectIcon = projectIconMap[project.icon] || Icons.code;
               const number = projectNumber(index);
               return (
-              <motion.a
-                className="project-card"
-                href={project.href}
-                target="_blank"
-                rel="noreferrer"
-                key={project.id}
-                initial={{ opacity: 0, y: 26, scale: 0.985 }}
-                whileInView={{ opacity: 1, y: 0, scale: 1 }}
-                viewport={{ once: true, margin: "-70px" }}
-                transition={{ duration: 0.5, delay: Math.min(index * 0.045, 0.22) }}
-                whileHover={{ y: -8 }}
-              >
-                <div className="project-visual">
-                  <div className="project-visual-top"><span>PROJECT {number}</span><span><i /> PUBLIC REPOSITORY</span></div>
-                  <div className="project-visual-grid" />
-                  <div className="project-orb project-orb-a" /><div className="project-orb project-orb-b" />
-                  <div className="project-console">
-                    <div className="console-head"><span/><span/><span/><small>vthish / {project.title.toLowerCase().replaceAll(" ", "-")}</small></div>
-                    <div className="console-body">
-                      <div className="project-icon-box"><ProjectIcon size={30}/></div>
-                      <div className="console-copy"><small>{project.category}</small><strong>{project.title}</strong></div>
-                    </div>
-                    <div className="console-stack">{project.stack.slice(0, 3).map((item) => <span key={item}>{item}</span>)}</div>
+                <motion.a className={`project-card${project.imageUrl ? " has-project-image" : ""}`} href={project.href} target="_blank" rel="noreferrer" key={project.id} initial={{ opacity: 0, y: 26, scale: 0.985 }} whileInView={{ opacity: 1, y: 0, scale: 1 }} viewport={{ once: true, margin: "-70px" }} transition={{ duration: 0.5, delay: Math.min(index * 0.045, 0.22) }} whileHover={{ y: -8 }}>
+                  <div className="project-visual">
+                    {project.imageUrl ? (
+                      <><ManagedImage src={project.imageUrl} alt={`${project.title} screenshot`} className="project-screenshot"/><div className="project-screenshot-overlay"/><div className="project-visual-top project-visual-top-image"><span>PROJECT {number}</span><span><i /> PROJECT PREVIEW</span></div></>
+                    ) : (
+                      <>
+                        <div className="project-visual-top"><span>PROJECT {number}</span><span><i /> PUBLIC REPOSITORY</span></div>
+                        <div className="project-visual-grid" /><div className="project-orb project-orb-a"/><div className="project-orb project-orb-b"/>
+                        <div className="project-console"><div className="console-head"><span/><span/><span/><small>vthish / {project.title.toLowerCase().replaceAll(" ", "-")}</small></div><div className="console-body"><div className="project-icon-box"><ProjectIcon size={30}/></div><div className="console-copy"><small>{project.category}</small><strong>{project.title}</strong></div></div><div className="console-stack">{project.stack.slice(0, 3).map((item) => <span key={item}>{item}</span>)}</div></div>
+                        <div className="project-code-lines"><span/><span/><span/><span/></div>
+                      </>
+                    )}
                   </div>
-                  <div className="project-code-lines"><span/><span/><span/><span/></div>
-                </div>
-                <div className="project-content">
-                  <div className="project-meta-row">
-                    <small>{project.category}</small>
-                    <span className="project-open"><Icons.github size={16}/> View repository <Icons.external size={14}/></span>
+                  <div className="project-content">
+                    <div className="project-meta-row"><small>{project.category}</small><span className="project-open"><Icons.github size={16}/> View repository <Icons.external size={14}/></span></div>
+                    <h3>{project.title}</h3><p>{project.description}</p>
+                    <div className="project-stack-title"><Icons.code size={14}/> Tech stack</div>
+                    <div className="project-tech-stack">{project.stack.map((item) => <span key={item}><i />{item}</span>)}</div>
+                    <div className="project-chips">{project.chips.map((chip) => <span key={chip}>{chip}</span>)}</div>
                   </div>
-                  <h3>{project.title}</h3>
-                  <p>{project.description}</p>
-                  <div className="project-stack-title"><Icons.code size={14}/> Tech stack</div>
-                  <div className="project-tech-stack">{project.stack.map((item) => <span key={item}><i />{item}</span>)}</div>
-                  <div className="project-chips">{project.chips.map((chip) => <span key={chip}>{chip}</span>)}</div>
-                </div>
-              </motion.a>
+                </motion.a>
               );
             })}
           </div>
         </section>
 
         <section className="section education-section" id="education">
-          <SectionTitle eyebrow="Education" title="Foundation + continuous learning." text="Formal software engineering study supported by continuous project-based learning." />
+          <SectionTitle {...content.educationHeading} />
           <div className="education-wrap">
-            <div className="education-rail"><span/><span/><span/></div>
-            {[
-              { year: "2021 / 2022", index: "01", title: "G.C.E. A/L", place: "Technology Stream", text: "Built the academic foundation that opened the path toward software engineering and product development.", Icon: Icons.graduation },
-              { year: "NIBM · Galle", index: "02", title: "Diploma in Software Engineering", place: "Software Engineering", text: "Strengthened practical software engineering fundamentals through structured study and hands-on project work.", Icon: Icons.certificate },
-              { year: "NIBM · Galle", index: "03", title: "Higher National Diploma in Software Engineering", place: "Advanced Software Engineering", text: "Expanded software engineering knowledge with higher-level study, applied development and continuous learning.", Icon: Icons.layers },
-            ].map((item, i) => {
-              const EducationIcon = item.Icon;
+            <div className="education-rail">{content.education.map((item, index) => <span key={item.id} style={{ top: `${content.education.length <= 1 ? 50 : 10 + (index * 80) / (content.education.length - 1)}%` }}/>)}</div>
+            {content.education.map((item, i) => {
+              const EducationIcon = contentIconMap[item.icon] || Icons.graduation;
               return (
-              <motion.article className="education-card" key={item.title} initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-70px" }} transition={{ duration: 0.55, delay: i * 0.08 }}>
-                <div className="education-index">{item.index}</div>
-                <div className="education-icon"><EducationIcon size={24}/></div>
-                <div className="education-content">
-                  <div className="education-meta"><span>{item.year}</span><i>EDUCATION</i></div>
-                  <h3>{item.title}</h3>
-                  <strong>{item.place}</strong>
-                  <p>{item.text}</p>
-                </div>
-              </motion.article>
+                <motion.article className="education-card" key={item.id} initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-70px" }} transition={{ duration: 0.55, delay: i * 0.08 }}>
+                  <div className="education-index">{itemNumber(i)}</div><div className="education-icon"><EducationIcon size={24}/></div><div className="education-content"><div className="education-meta"><span>{item.period}</span><i>EDUCATION</i></div><h3>{item.title}</h3><strong>{item.place}</strong><p>{item.text}</p></div>
+                </motion.article>
               );
             })}
           </div>
         </section>
 
+        {content.experiences.length > 0 && (
+          <section className="section experience-section" id="experience">
+            <SectionTitle {...content.experienceHeading} />
+            <div className="experience-grid">
+              {content.experiences.map((item, index) => (
+                <motion.article className="experience-card" key={item.id} initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-70px" }} transition={{ duration: 0.55, delay: Math.min(index * 0.07, 0.25) }}>
+                  {item.imageUrl ? <div className="experience-image"><ManagedImage src={item.imageUrl} alt={`${item.company} visual`}/></div> : <div className="experience-icon"><Icons.code size={24}/></div>}
+                  <div className="experience-meta"><span>{item.period}</span>{item.location ? <i>{item.location}</i> : null}</div>
+                  <h3>{item.role}</h3><strong>{item.company}</strong><p>{item.description}</p>
+                  {item.highlights.length ? <div className="experience-highlights">{item.highlights.map((highlight) => <span key={highlight}>{highlight}</span>)}</div> : null}
+                </motion.article>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {content.certificates.length > 0 && (
+          <section className="section certificates-section" id="certificates">
+            <SectionTitle {...content.certificatesHeading} />
+            <div className="certificate-grid">
+              {content.certificates.map((item, index) => {
+                const inner = <><div className="certificate-visual">{item.imageUrl ? <ManagedImage src={item.imageUrl} alt={`${item.title} certificate`}/> : <div className="certificate-placeholder"><Icons.certificate size={42}/><span>CERTIFICATE</span></div>}<div className="certificate-number">{itemNumber(index)}</div></div><div className="certificate-copy"><div className="certificate-meta"><span>{item.issuer || "Certificate"}</span><i>{item.date}</i></div><h3>{item.title}</h3>{item.description ? <p>{item.description}</p> : null}{item.credentialUrl ? <span className="certificate-link">View credential <Icons.external size={14}/></span> : null}</div></>;
+                return item.credentialUrl ? <motion.a className="certificate-card" href={item.credentialUrl} target="_blank" rel="noreferrer" key={item.id} initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-70px" }} transition={{ duration: 0.5, delay: Math.min(index * 0.06, 0.24) }} whileHover={{ y: -6 }}>{inner}</motion.a> : <motion.article className="certificate-card" key={item.id} initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-70px" }} transition={{ duration: 0.5, delay: Math.min(index * 0.06, 0.24) }} whileHover={{ y: -6 }}>{inner}</motion.article>;
+              })}
+            </div>
+          </section>
+        )}
+
         <section className="photo-break">
-          <div className="photo-break-image"><Image src="/images/city.webp" alt="Venusha Thishan standing outdoors in an urban setting" fill sizes="100vw" /></div>
+          <div className="photo-break-image"><ManagedImage src={content.photoBreak.imageUrl} alt={`${content.identity.name} portfolio feature`} /></div>
           <div className="photo-break-overlay" />
           <motion.div className="photo-break-copy" initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
-            <span>THE NEXT BUILD</span>
-            <h2>Good software should feel<br/>simple after the hard work.</h2>
+            <span>{content.photoBreak.eyebrow}</span><h2>{content.photoBreak.title.split("\n").map((line, index) => <span key={`${line}-${index}`}>{line}{index < content.photoBreak.title.split("\n").length - 1 ? <br/> : null}</span>)}</h2>
           </motion.div>
         </section>
 
         <section className="section contact-section" id="contact">
           <div className="contact-card">
             <motion.div initial={{ opacity: 0, y: 22 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
-              <span className="eyebrow"><span />Let’s work together</span>
-              <h2>Have a role, product or<br/><em>wild idea?</em></h2>
-              <p>If you need help with web development, mobile app development or DevOps-related delivery, the fastest way to start a conversation is WhatsApp.</p>
-              <div className="contact-actions">
-                <MagneticLink className="whatsapp-btn" href={whatsappHref} external><Icons.message size={20}/> Start on WhatsApp <Icons.arrow size={18}/></MagneticLink>
-                <a className="mail-btn" href="mailto:devthish17@gmail.com"><Icons.mail size={18}/> Email me</a>
-              </div>
+              <span className="eyebrow"><span />{content.contact.eyebrow}</span><h2>{content.contact.title}<br/><em>{content.contact.accent}</em></h2><p>{content.contact.text}</p>
+              <div className="contact-actions"><MagneticLink className="whatsapp-btn" href={whatsappHref} external><Icons.message size={20}/> {content.contact.whatsappButton} <Icons.arrow size={18}/></MagneticLink><a className="mail-btn" href={`mailto:${content.identity.email}`}><Icons.mail size={18}/> {content.contact.emailButton}</a></div>
             </motion.div>
             <motion.div className="contact-portrait" initial={{ opacity: 0, scale: 0.92 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }} transition={{ duration: 0.7 }}>
-              <Image src="/images/contact.webp" alt="Venusha Thishan" fill sizes="(max-width: 900px) 100vw, 38vw" />
-              <div className="contact-ring ring-one"/><div className="contact-ring ring-two"/>
+              <ManagedImage src={content.contact.imageUrl} alt={content.identity.name}/><div className="contact-ring ring-one"/><div className="contact-ring ring-two"/>
             </motion.div>
           </div>
         </section>
 
         <footer>
           <div className="footer-top">
-            <a className="brand footer-brand" href="#top"><span className="brand-mark">VT</span><span className="brand-copy">VENUSHA<br/><small>THISHAN</small></span></a>
+            <a className="brand footer-brand" href="#top"><span className="brand-mark">{content.identity.brandInitials}</span><span className="brand-copy">{content.identity.firstName.toUpperCase()}<br/><small>{content.identity.lastName.toUpperCase()}</small></span></a>
             <div className="footer-links footer-icon-links">
-              {socialLinks.map(({ label, href, Icon: SocialIcon }) => (
-                <a key={label} href={href} target="_blank" rel="noreferrer"><SocialIcon size={18}/><span>{label}</span></a>
-              ))}
-              <a href="mailto:devthish17@gmail.com"><Icons.mail size={18}/><span>Email</span></a>
-              <a href={whatsappHref} target="_blank" rel="noreferrer"><Icons.message size={18}/><span>WhatsApp</span></a>
+              {socialLinks.map((item) => { const SocialIcon = socialIconMap[item.icon] || Icons.external; return <a key={item.id} href={item.href} target="_blank" rel="noreferrer"><SocialIcon size={18}/><span>{item.label}</span></a>; })}
+              <a href={`mailto:${content.identity.email}`}><Icons.mail size={18}/><span>Email</span></a><a href={whatsappHref} target="_blank" rel="noreferrer"><Icons.message size={18}/><span>WhatsApp</span></a>
             </div>
           </div>
-          <div className="footer-bottom"><span>© {new Date().getFullYear()} Venusha Thishan. All rights reserved.</span><span>Software Engineer · Web · Mobile · DevOps</span></div>
+          <div className="footer-bottom"><span>© {new Date().getFullYear()} {content.identity.name}. All rights reserved.</span><span>{content.identity.footerTagline}</span></div>
         </footer>
 
-        <Chatbot projectCount={projects.length} />
+        <Chatbot content={content} />
       </main>
     </MotionConfig>
   );

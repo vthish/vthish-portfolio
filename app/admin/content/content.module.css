@@ -69,3 +69,22 @@
   .orderButtons { flex-wrap:wrap; }
   .saveBar button { width:100%; }
 }
+
+.compactList { display:grid; gap:14px; margin-top:18px; }
+.compactCard { border:1px solid rgba(133,162,240,.14); border-radius:18px; background:rgba(6,10,20,.55); padding:18px; }
+.subHead { display:flex; align-items:center; justify-content:space-between; gap:18px; margin:28px 0 10px; padding-top:22px; border-top:1px solid rgba(133,162,240,.12); }
+.subHead strong { font-size:16px; color:#e7efff; }
+.field small { color:#728199; font-size:11px; line-height:1.45; }
+.mediaRow { display:grid; grid-template-columns:minmax(0,1fr) auto auto; gap:8px; align-items:center; }
+.uploadButton,.removeMedia { min-height:42px; display:inline-flex; align-items:center; justify-content:center; padding:0 13px; border-radius:10px; border:1px solid rgba(133,162,240,.18); background:rgba(255,255,255,.04); color:#dce8ff; font-size:12px; font-weight:700; cursor:pointer; white-space:nowrap; }
+.uploadButton input { display:none; }
+.removeMedia { color:#ffaaaa; border-color:rgba(255,110,110,.18); font:inherit; font-size:12px; font-weight:700; }
+.mediaPreview { position:relative; width:min(360px,100%); aspect-ratio:16/9; margin-top:8px; border-radius:13px; overflow:hidden; background:#070c18; border:1px solid rgba(133,162,240,.14); }
+.mediaPreview img { width:100%; height:100%; object-fit:cover; display:block; }
+.emptyState { margin-top:18px; padding:18px; border:1px dashed rgba(133,162,240,.18); border-radius:14px; background:rgba(255,255,255,.02); color:#7f8da4; font-size:13px; text-align:center; }
+.projectsSection > .panel { margin-bottom:16px; }
+@media (max-width:760px) {
+  .mediaRow { grid-template-columns:1fr; }
+  .uploadButton,.removeMedia { width:100%; }
+  .subHead { align-items:flex-start; flex-direction:column; }
+}

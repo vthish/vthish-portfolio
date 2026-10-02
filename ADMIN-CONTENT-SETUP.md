@@ -1,55 +1,95 @@
-# Portfolio content admin
+# Full portfolio content admin
 
-This version adds a private content manager that uses the same password as the analytics dashboard.
+This version upgrades the private content manager so the portfolio can be maintained from the browser instead of editing source code for normal content updates.
 
-## URLs
+## Admin URLs
 
 - Admin home: `https://vthish.dev/admin`
 - Analytics: `https://vthish.dev/admin/analytics`
-- Portfolio content: `https://vthish.dev/admin/content`
+- Full portfolio content manager: `https://vthish.dev/admin/content`
 
-## Password
-
-No new password is required. The content manager uses the existing Netlify environment variable:
+The content manager uses the existing Netlify environment variable:
 
 ```text
 ANALYTICS_ADMIN_PASSWORD
 ```
 
-A successful admin login creates a secure, HttpOnly, SameSite=Strict session cookie for 12 hours. That same session unlocks both Analytics and Portfolio Content. Press **Lock** to end the session.
+No new password or environment variable is required.
 
-## What can be changed without editing code
+## What can be managed
 
-From `/admin/content` you can:
+From `/admin/content` you can edit:
 
-- change the CV URL
-- add a project
-- edit project title, category, description and repository/project URL
-- edit highlight chips and tech stack
-- choose the project card icon
-- reorder projects
-- delete projects
+- name, location, email, phone and WhatsApp details
+- the WhatsApp pre-filled message
+- CV URL
+- social links
+- hero text, rotating roles, tech marquee and hero image
+- About section text and image
+- Skills groups, skill tags and services
+- Projects: add, edit, delete, reorder, tech stack, links and screenshot images
+- Education: add, edit, delete and reorder
+- Experience: add, edit, delete, reorder and attach an optional image
+- Certificates: add, edit, delete, reorder, attach the certificate image and credential link
+- photo-break content and image
+- Contact section content and image
 
-Press **Save portfolio changes** to write the content to Netlify Blobs. The public portfolio reads the latest saved values when the page loads.
+Press **Save portfolio changes** to publish the updated content to the portfolio.
 
-## CV links
+## Project screenshots
 
-You can use either a public Google Drive preview URL such as:
+Every project has an optional **Real project screenshot** field.
+
+- If the field is empty, the portfolio keeps the original developer-console visual.
+- If you upload or paste an image URL, that project card switches to the real screenshot.
+- Project screenshots use a responsive crop (`object-fit: cover`) so the card stays aligned on desktop and mobile.
+
+The admin uploader accepts JPG, PNG and WebP up to 4 MB.
+
+## Certificates
+
+The default certificate list is empty, so **no certificate section is shown on the public portfolio right now**.
+
+When you add the first certificate and save:
+
+- a Certificates navigation item appears automatically
+- a matching certificate section appears automatically
+- the certificate can include title, issuer, date, description, credential URL and image
+
+Certificate images are fitted inside the card so the credential remains readable rather than being stretched.
+
+If all certificate items are deleted later, the public Certificates section disappears again.
+
+## Experience
+
+The default experience list is also empty, so **no Experience section is shown right now**.
+
+When you add an experience entry and save, the Experience navigation item and section appear automatically. Each entry can include role, company, period, location, description, highlights and an optional image.
+
+If all experience entries are deleted, the section is hidden again.
+
+## Image storage
+
+Images uploaded from the admin are stored separately in Netlify Blobs under the `portfolio-media-v1` store and are served through the public `portfolio-media` function.
+
+Editable content is stored in `portfolio-content-v2`.
+
+The previous `portfolio-content-v1` store is automatically read as a fallback so existing CV/project edits from the older admin version are preserved. After the first save in the new admin, the complete content is stored in v2.
+
+## CV
+
+The CV can still use either a public Google Drive preview URL:
 
 ```text
 https://drive.google.com/file/d/FILE_ID/view
 ```
 
-or a file hosted by the portfolio itself, for example:
+or a PDF hosted by the portfolio itself:
 
 ```text
 /cv/venusha-thishan-cv.pdf
 ```
 
-If you use the second option, place the PDF at `public/cv/venusha-thishan-cv.pdf` before deploying.
+## Important
 
-## Storage
-
-Editable portfolio content is stored separately from analytics in a Netlify Blobs store named `portfolio-content-v1`. Deploying new code does not normally erase the saved content.
-
-If no saved content exists yet, the site falls back to the projects and CV link included in the source code.
+The existing loader, scroll animations, project-card fallback visual, analytics tracking and monthly analytics email are not replaced by this content manager. The new Experience and Certificates UI is conditional and does not change the current public page until you add entries.

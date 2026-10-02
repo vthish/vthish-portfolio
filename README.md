@@ -43,6 +43,10 @@ The site is fully responsive and is deployed on **Netlify** with the custom doma
 - Accessibility support for reduced motion
 - Custom domain with HTTPS
 - Continuous deployment through GitHub + Netlify
+- Private full-content CMS at `/admin/content`
+- Project screenshot uploads with automatic fallback visuals
+- Conditional Experience and Certificates sections managed from admin
+- Netlify Blobs-backed content and media storage
 
 ---
 
@@ -194,6 +198,20 @@ For the monthly email, verify `vthish.dev` as a sending domain in Resend and cre
 You can test it after deployment from **Netlify → Functions → analytics-monthly-email → Run now**.
 
 For local testing of Netlify Functions and Blobs, use Netlify Dev instead of plain `next dev` when you need the analytics backend.
+
+---
+
+## 🧩 Private Portfolio Content Manager
+
+The private content manager is available at:
+
+```text
+https://vthish.dev/admin/content
+```
+
+It uses the same `ANALYTICS_ADMIN_PASSWORD` session as the analytics dashboard. Normal portfolio content can be updated without editing code: identity/contact details, CV, social links, hero, About, skills, services, projects, screenshots, education, experience, certificates, photo-break content and the contact section.
+
+Projects can optionally use a real uploaded screenshot. When no screenshot is configured, the original developer-console project visual is kept. Experience and Certificates are empty by default and remain hidden on the public site until an admin item is added. Uploaded images are stored in Netlify Blobs. See `ADMIN-CONTENT-SETUP.md` for details.
 
 ---
 

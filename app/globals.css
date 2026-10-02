@@ -602,6 +602,46 @@ footer { width: min(calc(100% - 48px), var(--max)); margin: 0 auto; padding: 26p
 .chat-input input::placeholder { color: #647189; }
 .chat-input button { width: 42px; cursor: pointer; border: 0; border-radius: 12px; display: grid; place-items: center; background: linear-gradient(135deg, #477dff, #765bef); color: #f7faff; box-shadow: 0 10px 22px rgba(76,110,239,.18); }
 
+
+/* Managed portfolio content */
+.managed-fill-image { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.project-screenshot { object-fit: cover; object-position: center; transform: scale(1.002); transition: transform .55s cubic-bezier(.22,1,.36,1), filter .4s ease; }
+.project-card:hover .project-screenshot { transform: scale(1.045); }
+.project-screenshot-overlay { position: absolute; inset: 0; z-index: 1; background: linear-gradient(180deg, rgba(4,8,16,.16), rgba(4,8,16,.03) 52%, rgba(4,8,16,.48)), linear-gradient(90deg, rgba(6,10,19,.18), transparent 50%); pointer-events: none; }
+.project-visual-top-image { z-index: 3; color: rgba(237,244,255,.9); text-shadow: 0 2px 12px rgba(0,0,0,.55); }
+.project-card.has-project-image .project-visual { background: #080d18; }
+
+.experience-section,.certificates-section { border-top: 1px solid rgba(120,150,235,.07); }
+.experience-grid { margin-top: 48px; display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 16px; }
+.experience-card { min-height: 320px; padding: 30px; border-radius: 26px; border: 1px solid rgba(128,158,238,.17); background: linear-gradient(145deg,rgba(27,39,72,.52),rgba(7,11,21,.84)); position: relative; overflow: hidden; box-shadow: inset 0 1px 0 rgba(255,255,255,.025); }
+.experience-card::after { content:""; position:absolute; width:220px; height:220px; right:-130px; bottom:-140px; border-radius:50%; background:rgba(74,126,255,.14); filter:blur(48px); pointer-events:none; }
+.experience-icon { width: 56px; height: 56px; display:grid; place-items:center; border-radius:16px; color:#bed3ff; border:1px solid rgba(110,153,255,.24); background:linear-gradient(145deg,rgba(77,127,255,.16),rgba(119,91,235,.08)); margin-bottom:24px; }
+.experience-image { position:relative; height:180px; margin:-12px -12px 24px; border-radius:18px; overflow:hidden; background:#0b1020; border:1px solid rgba(128,158,238,.13); }
+.experience-image img { object-fit:cover; object-position:center; }
+.experience-meta { display:flex; align-items:center; flex-wrap:wrap; gap:12px; color:#8fb3ff; font-size:10px; font-weight:780; letter-spacing:.1em; text-transform:uppercase; }
+.experience-meta i { font-style:normal; color:#748198; border-left:1px solid rgba(129,158,234,.18); padding-left:12px; }
+.experience-card h3 { margin:13px 0 6px; font-size:clamp(23px,2.3vw,32px); letter-spacing:-.035em; }
+.experience-card strong { color:#dbe5f7; font-size:13px; }
+.experience-card p { color:#aebbd0; font-size:13px; line-height:1.78; margin:15px 0 0; }
+.experience-highlights { display:flex; flex-wrap:wrap; gap:7px; margin-top:18px; }
+.experience-highlights span { padding:7px 9px; border-radius:999px; background:rgba(255,255,255,.04); border:1px solid rgba(131,158,231,.14); color:#c9d5e8; font-size:10px; }
+
+.certificate-grid { margin-top:48px; display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:16px; }
+.certificate-card { display:block; color:inherit; border-radius:24px; overflow:hidden; border:1px solid rgba(128,158,238,.17); background:linear-gradient(145deg,rgba(24,35,66,.6),rgba(7,11,21,.86)); box-shadow:0 20px 60px rgba(0,0,0,.2); transition:border-color .3s ease, box-shadow .3s ease; }
+.certificate-card:hover { border-color:rgba(112,153,255,.34); box-shadow:0 28px 78px rgba(0,0,0,.3),0 0 48px rgba(75,108,235,.07); }
+.certificate-visual { position:relative; aspect-ratio:1.45; overflow:hidden; background:radial-gradient(circle at 70% 20%,rgba(104,84,242,.2),transparent 34%),linear-gradient(135deg,rgba(34,56,117,.34),rgba(8,12,26,.16)); border-bottom:1px solid rgba(128,156,236,.12); }
+.certificate-visual img { object-fit:contain; object-position:center; padding:10px; box-sizing:border-box; background:rgba(5,9,18,.55); transition:transform .5s cubic-bezier(.22,1,.36,1); }
+.certificate-card:hover .certificate-visual img { transform:scale(1.035); }
+.certificate-placeholder { position:absolute; inset:0; display:grid; place-items:center; align-content:center; gap:12px; color:#a9c4ff; background-image:linear-gradient(rgba(111,145,238,.045) 1px,transparent 1px),linear-gradient(90deg,rgba(111,145,238,.045) 1px,transparent 1px); background-size:28px 28px; }
+.certificate-placeholder span { font-size:8px; font-weight:800; letter-spacing:.2em; color:#8493ad; }
+.certificate-number { position:absolute; right:14px; bottom:10px; z-index:2; font-size:48px; font-weight:900; letter-spacing:-.08em; color:rgba(229,238,255,.12); text-shadow:0 4px 20px rgba(0,0,0,.3); }
+.certificate-copy { padding:22px; }
+.certificate-meta { display:flex; justify-content:space-between; gap:12px; color:#8fb3ff; font-size:9px; font-weight:780; letter-spacing:.1em; text-transform:uppercase; }
+.certificate-meta i { font-style:normal; color:#7d8aa1; }
+.certificate-copy h3 { margin:12px 0 9px; font-size:21px; line-height:1.2; letter-spacing:-.025em; }
+.certificate-copy p { margin:0; color:#9eabc0; font-size:12px; line-height:1.72; }
+.certificate-link { display:inline-flex; align-items:center; gap:7px; margin-top:16px; color:#dbe7ff; font-size:11px; font-weight:700; }
+
 @media (max-width: 1050px) {
   .desktop-nav { display: none; }
   .menu-button { display: grid; }
@@ -618,6 +658,7 @@ footer { width: min(calc(100% - 48px), var(--max)); margin: 0 auto; padding: 26p
   .project-card:nth-child(7) { grid-column: span 12; }
   .education-wrap { max-width: 860px; }
   .contact-card { grid-template-columns: 1fr; padding-bottom: 0; }
+  .certificate-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
   .contact-portrait { height: 470px; }
 }
 
@@ -660,6 +701,7 @@ footer { width: min(calc(100% - 48px), var(--max)); margin: 0 auto; padding: 26p
   .education-card { margin-left: 48px; grid-template-columns: 1fr; gap: 15px; padding: 24px; }
   .education-index { font-size: 58px; }
   .education-card p { font-size: 13px; }
+  .experience-grid,.certificate-grid { grid-template-columns:1fr; }
   .photo-break { height: 540px; }
   .photo-break-image img { object-position: 58% center; }
   .photo-break-copy { left: 24px; right: 24px; }
