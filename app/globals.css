@@ -536,8 +536,9 @@ html.portfolio-loading body { overflow: hidden; }
 .photo-break-image img { object-fit: cover; object-position: center 58%; transform: scale(1.02); }
 .photo-break-overlay { position: absolute; inset: 0; background: linear-gradient(90deg, rgba(5,7,13,.94), rgba(5,7,13,.28) 55%, rgba(5,7,13,.7)), linear-gradient(0deg, var(--bg), transparent 24%, transparent 70%, var(--bg)); }
 .photo-break-copy { position: absolute; left: max(24px, calc((100vw - var(--max))/2)); top: 50%; transform: translateY(-50%); max-width: 720px; }
-.photo-break-copy span { color: var(--blue); font-size: 9px; letter-spacing: .2em; font-weight: 800; }
-.photo-break-copy h2 { font-size: clamp(36px,5vw,70px); line-height: .98; margin: 16px 0 0; letter-spacing: -.05em; }
+.photo-break-copy > span { color: var(--blue); font-size: 9px; letter-spacing: .2em; font-weight: 800; }
+.photo-break-copy h2 { color: #fff; font-size: clamp(36px,5vw,70px); line-height: .98; margin: 16px 0 0; letter-spacing: -.05em; }
+.photo-break-copy h2 span { color: inherit; font-size: inherit; letter-spacing: inherit; font-weight: inherit; }
 
 .contact-section { padding-top: 104px; padding-bottom: 70px; }
 .contact-card { min-height: 590px; display: grid; grid-template-columns: 1.1fr .9fr; align-items: center; gap: 30px; padding: 58px; border-radius: 32px; border: 1px solid rgba(126,156,238,.17); background: radial-gradient(circle at 10% 0%, rgba(72,117,255,.13), transparent 36%), radial-gradient(circle at 100% 100%, rgba(119,88,235,.14), transparent 38%), rgba(8,13,25,.72); overflow: hidden; position: relative; }
