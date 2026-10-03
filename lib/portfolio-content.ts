@@ -32,12 +32,20 @@ export type PortfolioProject = {
   category: string;
   description: string;
   href: string;
+  liveDemoUrl?: string;
+  status?: string;
   chips: string[];
   stack: string[];
   icon: ProjectIconKey;
   imageUrl?: string;
   imageUrls?: string[];
   videoUrl?: string;
+  caseStudy?: {
+    problem: string;
+    role: string;
+    solution: string;
+    outcome: string;
+  };
 };
 
 export type SkillGroup = {
@@ -85,6 +93,15 @@ export type ExperienceItem = {
   highlights: string[];
   imageUrl?: string;
   imageUrls?: string[];
+};
+
+export type TestimonialItem = {
+  id: string;
+  name: string;
+  role: string;
+  company: string;
+  quote: string;
+  profileUrl?: string;
 };
 
 export type PortfolioContent = {
@@ -136,6 +153,8 @@ export type PortfolioContent = {
   experiences: ExperienceItem[];
   certificatesHeading: SectionCopy;
   certificates: CertificateItem[];
+  testimonialsHeading: SectionCopy;
+  testimonials: TestimonialItem[];
   photoBreak: {
     imageUrl: string;
     imageUrls?: string[];
@@ -259,6 +278,12 @@ export const DEFAULT_PORTFOLIO_CONTENT: PortfolioContent = {
     text: "Certifications and recognised learning milestones that support my engineering journey.",
   },
   certificates: [],
+  testimonialsHeading: {
+    eyebrow: "Recommendations",
+    title: "What people say about working with me.",
+    text: "Recommendations from people I have studied, built or collaborated with.",
+  },
+  testimonials: [],
   photoBreak: {
     imageUrl: "/images/city.webp",
     imageUrls: ["/images/city.webp"],

@@ -11,6 +11,21 @@ export const metadata: Metadata = {
   alternates: {
     canonical: "/",
   },
+  openGraph: {
+    type: "website",
+    url: "https://vthish.dev",
+    siteName: "Venusha Thishan Portfolio",
+    title: "Venusha Thishan | Software Engineer",
+    description: "Software engineer portfolio featuring web, mobile, AI/ML, cloud and DevOps projects.",
+    images: [{ url: "/images/profile-main.webp", width: 1024, height: 1024, alt: "Venusha Thishan portfolio" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Venusha Thishan | Software Engineer",
+    description: "Software engineer portfolio featuring web, mobile, AI/ML, cloud and DevOps projects.",
+    images: ["/images/profile-main.webp"],
+  },
+  robots: { index: true, follow: true },
   icons: {
     icon: [
       { url: "/favicon.ico", sizes: "any" },

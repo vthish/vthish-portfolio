@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, ReactNode, useEffect, useMemo, useState } from "react";
+import { FormEvent, ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import {
   CONTENT_ICON_KEYS,
   DEFAULT_PORTFOLIO_CONTENT,
@@ -15,6 +15,7 @@ import {
   type ServiceItem,
   type SkillGroup,
   type SocialLink,
+  type TestimonialItem,
 } from "@/lib/portfolio-content";
 import { resolveVideoSource } from "@/lib/video";
 import styles from "./content.module.css";
@@ -45,7 +46,7 @@ const toCsv = (items: string[]) => items.join(", ");
 const fromCsv = (value: string) => value.split(",").map((item) => item.trim()).filter(Boolean);
 
 function newProject(): PortfolioProject {
-  return { id: `project-${stamp()}`, title: "New Project", category: "Software / Project", description: "Add a concise description of what this project does and the problem it solves.", href: "https://github.com/vthish", chips: ["Project"], stack: ["TypeScript"], icon: "code", imageUrl: "", imageUrls: [], videoUrl: "" };
+  return { id: `project-${stamp()}`, title: "New Project", category: "Software / Project", description: "Add a concise description of what this project does and the problem it solves.", href: "https://github.com/vthish", liveDemoUrl: "", status: "", chips: ["Project"], stack: ["TypeScript"], icon: "code", imageUrl: "", imageUrls: [], videoUrl: "", caseStudy: { problem: "", role: "", solution: "", outcome: "" } };
 }
 function newSkillGroup(): SkillGroup {
   return { id: `skill-${stamp()}`, title: "New Skill Group", summary: "Describe this capability area.", items: ["Skill"], icon: "code" };
@@ -64,6 +65,109 @@ function newExperience(): ExperienceItem {
 }
 function newSocial(): SocialLink {
   return { id: `social-${stamp()}`, label: "Profile", href: "https://", icon: "link" };
+}
+function newTestimonial(): TestimonialItem {
+  return { id: `testimonial-${stamp()}`, name: "Name", role: "Role", company: "Company", quote: "Add a genuine recommendation or testimonial here.", profileUrl: "" };
+}
+
+const DRAFT_KEY = "vthish:portfolio-admin-draft:v1";
+
+type DraftEnvelope = { savedAt: string; content: PortfolioContent };
+type BackupEnvelope = {
+  version: 1;
+  exportedAt: string;
+  content: PortfolioContent;
+  mediaManifest: string[];
+};
+
+function collectManagedMediaUrls(value: unknown, output = new Set<string>()) {
+  if (typeof value === "string") {
+    if (value.startsWith("/.netlify/functions/portfolio-media?id=")) output.add(value);
+    return output;
+  }
+  if (Array.isArray(value)) {
+    value.forEach((item) => collectManagedMediaUrls(item, output));
+    return output;
+  }
+  if (value && typeof value === "object") {
+    Object.values(value as Record<string, unknown>).forEach((item) => collectManagedMediaUrls(item, output));
+  }
+  return output;
+}
+
+
+function hydrateImportedContent(raw: Partial<PortfolioContent>): PortfolioContent {
+  const defaults = DEFAULT_PORTFOLIO_CONTENT;
+  return {
+    ...defaults,
+    ...raw,
+    identity: { ...defaults.identity, ...(raw.identity || {}) },
+    socialLinks: Array.isArray(raw.socialLinks) ? raw.socialLinks : defaults.socialLinks,
+    hero: { ...defaults.hero, ...(raw.hero || {}) },
+    marquee: Array.isArray(raw.marquee) ? raw.marquee : defaults.marquee,
+    about: { ...defaults.about, ...(raw.about || {}), heading: { ...defaults.about.heading, ...(raw.about?.heading || {}) }, paragraphs: Array.isArray(raw.about?.paragraphs) ? raw.about!.paragraphs : defaults.about.paragraphs },
+    skills: { ...defaults.skills, ...(raw.skills || {}), heading: { ...defaults.skills.heading, ...(raw.skills?.heading || {}) }, featured: Array.isArray(raw.skills?.featured) ? raw.skills!.featured : defaults.skills.featured, groups: Array.isArray(raw.skills?.groups) ? raw.skills!.groups : defaults.skills.groups, services: Array.isArray(raw.skills?.services) ? raw.skills!.services : defaults.skills.services },
+    projectsHeading: { ...defaults.projectsHeading, ...(raw.projectsHeading || {}) },
+    projects: Array.isArray(raw.projects) ? raw.projects : defaults.projects,
+    educationHeading: { ...defaults.educationHeading, ...(raw.educationHeading || {}) },
+    education: Array.isArray(raw.education) ? raw.education : defaults.education,
+    experienceHeading: { ...defaults.experienceHeading, ...(raw.experienceHeading || {}) },
+    experiences: Array.isArray(raw.experiences) ? raw.experiences : defaults.experiences,
+    certificatesHeading: { ...defaults.certificatesHeading, ...(raw.certificatesHeading || {}) },
+    certificates: Array.isArray(raw.certificates) ? raw.certificates : defaults.certificates,
+    testimonialsHeading: { ...defaults.testimonialsHeading, ...(raw.testimonialsHeading || {}) },
+    testimonials: Array.isArray(raw.testimonials) ? raw.testimonials : defaults.testimonials,
+    photoBreak: { ...defaults.photoBreak, ...(raw.photoBreak || {}) },
+    contact: { ...defaults.contact, ...(raw.contact || {}) },
+  };
+}
+
+function downloadJson(filename: string, data: unknown) {
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = filename;
+  document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
+  URL.revokeObjectURL(url);
+}
+
+async function optimizeImageFile(file: File) {
+  if (!file.type.startsWith("image/") || file.size < 350 * 1024) return file;
+  try {
+    const bitmap = await createImageBitmap(file);
+    const maxDimension = 2200;
+    const scale = Math.min(1, maxDimension / Math.max(bitmap.width, bitmap.height));
+    const width = Math.max(1, Math.round(bitmap.width * scale));
+    const height = Math.max(1, Math.round(bitmap.height * scale));
+    const canvas = document.createElement("canvas");
+    canvas.width = width; canvas.height = height;
+    const context = canvas.getContext("2d");
+    if (!context) { bitmap.close(); return file; }
+    context.drawImage(bitmap, 0, 0, width, height);
+    bitmap.close();
+    const qualitySteps = [0.86, 0.78, 0.7];
+    const targetBytes = 4 * 1024 * 1024;
+    let smallest: Blob | null = null;
+    for (const quality of qualitySteps) {
+      const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/webp", quality));
+      if (!blob) continue;
+      if (!smallest || blob.size < smallest.size) smallest = blob;
+      if (blob.size <= targetBytes) {
+        const base = file.name.replace(/\.[^.]+$/, "") || "portfolio-image";
+        return new File([blob], `${base}.webp`, { type: "image/webp", lastModified: Date.now() });
+      }
+    }
+    if (smallest && smallest.size < file.size) {
+      const base = file.name.replace(/\.[^.]+$/, "") || "portfolio-image";
+      return new File([smallest], `${base}.webp`, { type: "image/webp", lastModified: Date.now() });
+    }
+  } catch {
+    // Keep the original image if the browser cannot optimize it.
+  }
+  return file;
 }
 
 function SectionHead({ kicker, title, text, action }: { kicker: string; title: string; text?: string; action?: ReactNode }) {
@@ -90,7 +194,8 @@ function MediaField({ label, value, onChange, hint }: { label: string; value?: s
     if (!file) return;
     setUploading(true); setError("");
     try {
-      const body = new FormData(); body.append("file", file);
+      const optimized = await optimizeImageFile(file);
+      const body = new FormData(); body.append("file", optimized);
       const response = await fetch("/.netlify/functions/portfolio-media-admin", { method: "POST", body, credentials: "same-origin" });
       const payload = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(payload.error || "Upload failed.");
@@ -162,7 +267,8 @@ function MediaGalleryField({ label, values, legacyValue, onChange, max = 10, hin
       const selected = Array.from(files).slice(0, room);
       const uploaded: string[] = [];
       for (const file of selected) {
-        const body = new FormData(); body.append("file", file);
+        const optimized = await optimizeImageFile(file);
+        const body = new FormData(); body.append("file", optimized);
         const response = await fetch("/.netlify/functions/portfolio-media-admin", { method: "POST", body, credentials: "same-origin" });
         const payload = await response.json().catch(() => ({}));
         if (!response.ok) throw new Error(payload.error || `Upload failed for ${file.name}.`);
@@ -211,6 +317,10 @@ export default function ContentManager() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
+  const [serverFingerprint, setServerFingerprint] = useState("");
+  const [draftCandidate, setDraftCandidate] = useState<DraftEnvelope | null>(null);
+  const [lastDraftSavedAt, setLastDraftSavedAt] = useState("");
+  const importInputRef = useRef<HTMLInputElement | null>(null);
 
   async function loadContent() {
     setLoading(true); setError("");
@@ -218,7 +328,22 @@ export default function ContentManager() {
       const response = await fetch("/.netlify/functions/portfolio-content-admin", { cache: "no-store", credentials: "same-origin" });
       if (response.status === 401) { setAuthenticated(false); return; }
       if (!response.ok) throw new Error("Could not load portfolio content.");
-      setContent((await response.json()) as PortfolioContent); setAuthenticated(true);
+      const loaded = (await response.json()) as PortfolioContent;
+      setContent(loaded);
+      setServerFingerprint(JSON.stringify(loaded));
+      setAuthenticated(true);
+      try {
+        const rawDraft = window.localStorage.getItem(DRAFT_KEY);
+        if (rawDraft) {
+          const draft = JSON.parse(rawDraft) as DraftEnvelope;
+          const serverTime = Date.parse(loaded.updatedAt || "") || 0;
+          const draftTime = Date.parse(draft.savedAt || "") || 0;
+          if (draft?.content && draftTime > serverTime + 1000) setDraftCandidate(draft);
+          else window.localStorage.removeItem(DRAFT_KEY);
+        }
+      } catch {
+        window.localStorage.removeItem(DRAFT_KEY);
+      }
     } catch (err) { setError(err instanceof Error ? err.message : "Could not load portfolio content."); }
     finally { setLoading(false); }
   }
@@ -230,7 +355,11 @@ export default function ContentManager() {
     setLoading(true); setError("");
     try {
       const response = await fetch("/.netlify/functions/admin-auth", { method: "POST", headers: { "content-type": "application/json" }, credentials: "same-origin", body: JSON.stringify({ password }) });
-      if (!response.ok) { setError(response.status === 401 ? "Wrong password." : "Could not sign in."); return; }
+      if (!response.ok) {
+        const payload = await response.json().catch(() => ({}));
+        setError(payload.error || (response.status === 401 ? "Wrong password." : "Could not sign in."));
+        return;
+      }
       setPassword(""); await loadContent();
     } catch { setError("Could not connect to the admin service."); }
     finally { setLoading(false); }
@@ -247,7 +376,7 @@ export default function ContentManager() {
     setError(`Admin session locked after ${ADMIN_IDLE_MINUTES} minutes of inactivity or when the secure session expired.`);
   });
 
-  type EditableArrayKey = "socialLinks" | "projects" | "education" | "experiences" | "certificates";
+  type EditableArrayKey = "socialLinks" | "projects" | "education" | "experiences" | "certificates" | "testimonials";
   function patchArray(key: EditableArrayKey, index: number, patch: Record<string, unknown>) {
     setContent((current) => ({ ...current, [key]: (current[key] as unknown as Record<string, unknown>[]).map((item, i) => i === index ? { ...item, ...patch } : item) } as PortfolioContent)); setNotice("");
   }
@@ -270,6 +399,65 @@ export default function ContentManager() {
   function moveService(index: number, direction: -1 | 1) { setContent((current) => { const next = [...current.skills.services]; const target = index + direction; if (target < 0 || target >= next.length) return current; [next[index], next[target]] = [next[target], next[index]]; return { ...current, skills: { ...current.skills, services: next } }; }); setNotice(""); }
   function removeService(index: number) { if (!window.confirm("Remove this service?")) return; setContent((current) => ({ ...current, skills: { ...current.skills, services: current.skills.services.filter((_, i) => i !== index) } })); }
 
+  useEffect(() => {
+    if (!authenticated || !serverFingerprint || draftCandidate) return;
+    const fingerprint = JSON.stringify(content);
+    if (fingerprint === serverFingerprint) return;
+    const timer = window.setTimeout(() => {
+      const envelope: DraftEnvelope = { savedAt: new Date().toISOString(), content };
+      try {
+        window.localStorage.setItem(DRAFT_KEY, JSON.stringify(envelope));
+        setLastDraftSavedAt(envelope.savedAt);
+      } catch {
+        // Local draft is best-effort; server save remains the source of truth.
+      }
+    }, 900);
+    return () => window.clearTimeout(timer);
+  }, [authenticated, content, draftCandidate, serverFingerprint]);
+
+  function restoreDraft() {
+    if (!draftCandidate) return;
+    setContent(draftCandidate.content);
+    setLastDraftSavedAt(draftCandidate.savedAt);
+    setDraftCandidate(null);
+    setNotice("Recovered the local draft. Review it, then press Save portfolio changes.");
+  }
+
+  function discardDraft() {
+    window.localStorage.removeItem(DRAFT_KEY);
+    setDraftCandidate(null);
+    setLastDraftSavedAt("");
+    setNotice("Local draft discarded. The live saved content is unchanged.");
+  }
+
+  function exportBackup() {
+    const mediaManifest = [...collectManagedMediaUrls(content)].sort();
+    const backup: BackupEnvelope = { version: 1, exportedAt: new Date().toISOString(), content, mediaManifest };
+    downloadJson(`vthish-portfolio-backup-${new Date().toISOString().slice(0, 10)}.json`, backup);
+    setNotice(`Backup exported with content and ${mediaManifest.length} managed-media reference${mediaManifest.length === 1 ? "" : "s"}.`);
+  }
+
+  async function importBackup(file?: File) {
+    if (!file) return;
+    setError(""); setNotice("");
+    try {
+      const parsed = JSON.parse(await file.text()) as unknown;
+      if (!parsed || typeof parsed !== "object") throw new Error("This does not look like a portfolio backup.");
+      const candidate = ("content" in parsed && (parsed as Partial<BackupEnvelope>).content)
+        ? (parsed as Partial<BackupEnvelope>).content
+        : parsed as Partial<PortfolioContent>;
+      if (!candidate || typeof candidate !== "object" || !Array.isArray(candidate.projects) || !candidate.identity) throw new Error("This does not look like a portfolio backup.");
+      const restored = hydrateImportedContent(candidate);
+      setContent(restored);
+      setDraftCandidate(null);
+      setNotice("Backup loaded into the editor. Review it first, then press Save portfolio changes to publish it.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not import backup.");
+    } finally {
+      if (importInputRef.current) importInputRef.current.value = "";
+    }
+  }
+
   async function save() {
     if (saving) return; setSaving(true); setError(""); setNotice("");
     try {
@@ -277,18 +465,31 @@ export default function ContentManager() {
       const payload = await response.json().catch(() => ({}));
       if (response.status === 401) { setAuthenticated(false); setError("Your admin session expired. Sign in again."); return; }
       if (!response.ok) throw new Error(payload.error || "Could not save changes.");
-      setContent(payload as PortfolioContent); setNotice("Saved. Refresh the live portfolio to see the updated content.");
+      const saved = payload as PortfolioContent;
+      setContent(saved);
+      setServerFingerprint(JSON.stringify(saved));
+      window.localStorage.removeItem(DRAFT_KEY);
+      setDraftCandidate(null); setLastDraftSavedAt("");
+      setNotice("Saved. Refresh the live portfolio to see the updated content.");
     } catch (err) { setError(err instanceof Error ? err.message : "Could not save changes."); }
     finally { setSaving(false); }
   }
 
-  const counts = useMemo(() => `${content.projects.length} projects · ${content.education.length} education · ${content.experiences.length} experience · ${content.certificates.length} certificates`, [content]);
+  const counts = useMemo(() => `${content.projects.length} projects · ${content.education.length} education · ${content.experiences.length} experience · ${content.certificates.length} certificates · ${content.testimonials.length} testimonials`, [content]);
 
   if (loading && authenticated === null) return <main className={styles.page}><div className={styles.loading}>Loading admin…</div></main>;
   if (!authenticated) return <main className={styles.page}><form className={styles.loginCard} onSubmit={login}><div className={styles.mark}>VT</div><span className={styles.eyebrow}>PRIVATE ADMIN</span><h1>Portfolio content</h1><p>Manage the live portfolio with the same password as your private analytics dashboard. <strong>Auto-lock: {ADMIN_IDLE_MINUTES} min inactivity · {ADMIN_SESSION_HOURS}h max.</strong></p><input type="password" value={password} onChange={(event) => setPassword(event.target.value)} placeholder="Admin password" autoComplete="current-password" autoFocus/><button type="submit" disabled={loading}>{loading ? "Signing in…" : "Open content manager"}</button>{error ? <div className={styles.error}>{error}</div> : null}<div className={styles.loginLinks}><a href="/admin/analytics">Analytics</a><a href="/">Portfolio</a></div></form></main>;
 
   return <main className={styles.page}><div className={styles.dashboard}>
-    <header className={styles.header}><div><span className={styles.eyebrow}>VTHISH.DEV · PRIVATE ADMIN</span><h1>Portfolio content</h1><p>Full content manager · {counts}</p></div><div className={styles.headerActions}><a href="/admin/analytics">Analytics</a><a href="/" target="_blank" rel="noreferrer">Open portfolio ↗</a><button type="button" onClick={logout}>Lock</button></div></header><div className={styles.sessionNote}>Auto-locks after {ADMIN_IDLE_MINUTES} min inactivity · max session {ADMIN_SESSION_HOURS}h</div>
+    <header className={styles.header}><div><span className={styles.eyebrow}>VTHISH.DEV · PRIVATE ADMIN</span><h1>Portfolio content</h1><p>Full content manager · {counts}</p></div><div className={styles.headerActions}><a href="/admin/analytics">Analytics</a><a href="/" target="_blank" rel="noreferrer">Open portfolio ↗</a><button type="button" onClick={logout}>Lock</button></div></header><div className={styles.sessionNote}>Auto-locks after {ADMIN_IDLE_MINUTES} min inactivity · max session {ADMIN_SESSION_HOURS}h{lastDraftSavedAt ? ` · local draft ${new Date(lastDraftSavedAt).toLocaleTimeString()}` : ""}</div>
+
+    {draftCandidate ? <div className={styles.draftBanner}><div><strong>Unsaved local draft found</strong><span>Saved {new Date(draftCandidate.savedAt).toLocaleString()}. Restore it or discard it before editing.</span></div><div><button type="button" onClick={restoreDraft}>Restore draft</button><button type="button" onClick={discardDraft}>Discard</button></div></div> : null}
+
+    <section className={styles.panel}>
+      <SectionHead kicker="SAFETY" title="Backup & restore" text="Export the full portfolio content plus a manifest of Netlify-managed media URLs. Importing loads the backup into the editor first; nothing goes live until you press Save."/>
+      <div className={styles.toolRow}><button className={styles.addButton} type="button" onClick={exportBackup}>Export backup JSON</button><button className={styles.addButton} type="button" onClick={() => importInputRef.current?.click()}>Import backup JSON</button><input ref={importInputRef} className={styles.hiddenFile} type="file" accept="application/json,.json" onChange={(event) => { void importBackup(event.target.files?.[0]); }}/></div>
+      <p className={styles.toolNote}>The media manifest preserves references for this same Netlify site. For a future move to a different Netlify project, export/migrate Blob media before deleting the old site.</p>
+    </section>
 
     <section className={styles.panel}>
       <SectionHead kicker="SITE" title="Identity, contact & CV" text="Core details used across the hero, footer, WhatsApp, email and CV buttons."/>
@@ -353,7 +554,7 @@ export default function ContentManager() {
     <section className={styles.projectsSection}>
       <SectionHead kicker="PROJECTS" title={`${content.projects.length} project${content.projects.length === 1 ? "" : "s"}`} text="Add real screenshots when you have them. If Image is empty, the original developer-console visual stays exactly as the fallback." action={<button className={styles.addButton} type="button" onClick={() => setContent((c) => ({ ...c, projects: [...c.projects, newProject()] }))}>+ Add project</button>}/>
       <div className={styles.panel}><HeadingFields value={content.projectsHeading} onChange={(projectsHeading) => setContent((c) => ({ ...c, projectsHeading }))}/></div>
-      <div className={styles.projectList}>{content.projects.map((project, index) => <article className={styles.projectCard} key={project.id}><div className={styles.projectTop}><div className={styles.projectIndex}>{projectNumber(index)}</div><div className={styles.projectTopCopy}><strong>{project.title || "Untitled project"}</strong><span>{project.category || "No category"}</span></div><OrderButtons index={index} total={content.projects.length} label="project" onMove={(d) => moveArray("projects", index, d)} onDelete={() => removeArray("projects", index, "project")}/></div><div className={styles.formGrid}><Field label="Project title"><input value={project.title} onChange={(e) => patchArray("projects", index, { title: e.target.value })}/></Field><Field label="Category"><input value={project.category} onChange={(e) => patchArray("projects", index, { category: e.target.value })}/></Field><Field label="Repository / project URL" full><input value={project.href} onChange={(e) => patchArray("projects", index, { href: e.target.value })}/></Field><Field label="Description" full><textarea rows={4} value={project.description} onChange={(e) => patchArray("projects", index, { description: e.target.value })}/></Field><Field label="Highlight chips · comma separated"><input value={toCsv(project.chips)} onChange={(e) => patchArray("projects", index, { chips: fromCsv(e.target.value) })}/></Field><Field label="Tech stack · comma separated"><input value={toCsv(project.stack)} onChange={(e) => patchArray("projects", index, { stack: fromCsv(e.target.value) })}/></Field><Field label="Card icon"><select value={project.icon} onChange={(e) => patchArray("projects", index, { icon: e.target.value as ContentIconKey })}>{CONTENT_ICON_KEYS.map((key) => <option value={key} key={key}>{iconLabels[key]}</option>)}</select></Field><Field label="Internal ID"><input value={project.id} onChange={(e) => patchArray("projects", index, { id: e.target.value })}/></Field><MediaGalleryField label="Project screenshots" values={project.imageUrls} legacyValue={project.imageUrl} onChange={(urls) => patchArray("projects", index, { imageUrls: urls, imageUrl: urls[0] || "" })} max={12} emptyText="No screenshots yet. The portfolio keeps the current default developer-console graphic until you upload one."/><ProjectVideoField value={project.videoUrl} onChange={(url) => patchArray("projects", index, { videoUrl: url })}/></div></article>)}</div>
+      <div className={styles.projectList}>{content.projects.map((project, index) => <article className={styles.projectCard} key={project.id}><div className={styles.projectTop}><div className={styles.projectIndex}>{projectNumber(index)}</div><div className={styles.projectTopCopy}><strong>{project.title || "Untitled project"}</strong><span>{project.category || "No category"}</span></div><OrderButtons index={index} total={content.projects.length} label="project" onMove={(d) => moveArray("projects", index, d)} onDelete={() => removeArray("projects", index, "project")}/></div><div className={styles.formGrid}><Field label="Project title"><input value={project.title} onChange={(e) => patchArray("projects", index, { title: e.target.value })}/></Field><Field label="Category"><input value={project.category} onChange={(e) => patchArray("projects", index, { category: e.target.value })}/></Field><Field label="Repository / project URL" full><input value={project.href} onChange={(e) => patchArray("projects", index, { href: e.target.value })}/></Field><Field label="Live demo URL"><input value={project.liveDemoUrl || ""} onChange={(e) => patchArray("projects", index, { liveDemoUrl: e.target.value })} placeholder="https://..."/></Field><Field label="Status"><input value={project.status || ""} onChange={(e) => patchArray("projects", index, { status: e.target.value })} placeholder="Live / Completed / In Development"/></Field><Field label="Description" full><textarea rows={4} value={project.description} onChange={(e) => patchArray("projects", index, { description: e.target.value })}/></Field><Field label="Highlight chips · comma separated"><input value={toCsv(project.chips)} onChange={(e) => patchArray("projects", index, { chips: fromCsv(e.target.value) })}/></Field><Field label="Tech stack · comma separated"><input value={toCsv(project.stack)} onChange={(e) => patchArray("projects", index, { stack: fromCsv(e.target.value) })}/></Field><Field label="Card icon"><select value={project.icon} onChange={(e) => patchArray("projects", index, { icon: e.target.value as ContentIconKey })}>{CONTENT_ICON_KEYS.map((key) => <option value={key} key={key}>{iconLabels[key]}</option>)}</select></Field><Field label="Internal ID"><input value={project.id} onChange={(e) => patchArray("projects", index, { id: e.target.value })}/></Field><Field label="Case study · Problem" full><textarea rows={2} value={project.caseStudy?.problem || ""} onChange={(e) => patchArray("projects", index, { caseStudy: { problem: e.target.value, role: project.caseStudy?.role || "", solution: project.caseStudy?.solution || "", outcome: project.caseStudy?.outcome || "" } })}/></Field><Field label="Case study · My role" full><textarea rows={2} value={project.caseStudy?.role || ""} onChange={(e) => patchArray("projects", index, { caseStudy: { problem: project.caseStudy?.problem || "", role: e.target.value, solution: project.caseStudy?.solution || "", outcome: project.caseStudy?.outcome || "" } })}/></Field><Field label="Case study · Solution" full><textarea rows={3} value={project.caseStudy?.solution || ""} onChange={(e) => patchArray("projects", index, { caseStudy: { problem: project.caseStudy?.problem || "", role: project.caseStudy?.role || "", solution: e.target.value, outcome: project.caseStudy?.outcome || "" } })}/></Field><Field label="Case study · Outcome" full><textarea rows={2} value={project.caseStudy?.outcome || ""} onChange={(e) => patchArray("projects", index, { caseStudy: { problem: project.caseStudy?.problem || "", role: project.caseStudy?.role || "", solution: project.caseStudy?.solution || "", outcome: e.target.value } })}/></Field><MediaGalleryField label="Project screenshots" values={project.imageUrls} legacyValue={project.imageUrl} onChange={(urls) => patchArray("projects", index, { imageUrls: urls, imageUrl: urls[0] || "" })} max={12} emptyText="No screenshots yet. The portfolio keeps the current default developer-console graphic until you upload one."/><ProjectVideoField value={project.videoUrl} onChange={(url) => patchArray("projects", index, { videoUrl: url })}/></div><div className={styles.inlineActions}><a href={`/projects/${encodeURIComponent(project.id)}`} target="_blank" rel="noreferrer">Open share page ↗</a><span>Use this project-specific URL when sharing on LinkedIn or messaging.</span></div></article>)}</div>
     </section>
 
     <section className={styles.panel}>
@@ -374,6 +575,13 @@ export default function ContentManager() {
       <HeadingFields value={content.certificatesHeading} onChange={(certificatesHeading) => setContent((c) => ({ ...c, certificatesHeading }))}/>
       {content.certificates.length === 0 ? <div className={styles.emptyState}>No certificates yet · public section is hidden.</div> : null}
       <div className={styles.compactList}>{content.certificates.map((item, index) => <article className={styles.compactCard} key={item.id}><div className={styles.projectTop}><div className={styles.projectIndex}>{itemNumber(index)}</div><div className={styles.projectTopCopy}><strong>{item.title}</strong><span>{item.issuer}</span></div><OrderButtons index={index} total={content.certificates.length} label="certificate" onMove={(d) => moveArray("certificates", index, d)} onDelete={() => removeArray("certificates", index, "certificate")}/></div><div className={styles.formGrid}><Field label="Certificate title"><input value={item.title} onChange={(e) => patchArray("certificates", index, { title: e.target.value })}/></Field><Field label="Issuer"><input value={item.issuer} onChange={(e) => patchArray("certificates", index, { issuer: e.target.value })}/></Field><Field label="Date"><input value={item.date} onChange={(e) => patchArray("certificates", index, { date: e.target.value })}/></Field><Field label="Credential URL"><input value={item.credentialUrl || ""} onChange={(e) => patchArray("certificates", index, { credentialUrl: e.target.value })}/></Field><Field label="Description" full><textarea rows={3} value={item.description} onChange={(e) => patchArray("certificates", index, { description: e.target.value })}/></Field><MediaGalleryField label="Certificate images" values={item.imageUrls} legacyValue={item.imageUrl} onChange={(urls) => patchArray("certificates", index, { imageUrls: urls, imageUrl: urls[0] || "" })} max={10} hint="Upload one or more certificate images/scans. They rotate inside the existing certificate card without stretching."/></div></article>)}</div>
+    </section>
+
+    <section className={styles.panel}>
+      <SectionHead kicker="TESTIMONIALS" title="Recommendations" text="This public section stays hidden while empty. Add genuine recommendations later and it appears automatically." action={<button className={styles.addButton} type="button" onClick={() => setContent((c) => ({ ...c, testimonials: [...c.testimonials, newTestimonial()] }))}>+ Add testimonial</button>}/>
+      <HeadingFields value={content.testimonialsHeading} onChange={(testimonialsHeading) => setContent((c) => ({ ...c, testimonialsHeading }))}/>
+      {content.testimonials.length === 0 ? <div className={styles.emptyState}>No testimonials yet · public section is hidden.</div> : null}
+      <div className={styles.compactList}>{content.testimonials.map((item, index) => <article className={styles.compactCard} key={item.id}><div className={styles.projectTop}><div className={styles.projectIndex}>{itemNumber(index)}</div><div className={styles.projectTopCopy}><strong>{item.name}</strong><span>{[item.role, item.company].filter(Boolean).join(" · ")}</span></div><OrderButtons index={index} total={content.testimonials.length} label="testimonial" onMove={(d) => moveArray("testimonials", index, d)} onDelete={() => removeArray("testimonials", index, "testimonial")}/></div><div className={styles.formGrid}><Field label="Name"><input value={item.name} onChange={(e) => patchArray("testimonials", index, { name: e.target.value })}/></Field><Field label="Role"><input value={item.role} onChange={(e) => patchArray("testimonials", index, { role: e.target.value })}/></Field><Field label="Company"><input value={item.company} onChange={(e) => patchArray("testimonials", index, { company: e.target.value })}/></Field><Field label="Profile / source URL"><input value={item.profileUrl || ""} onChange={(e) => patchArray("testimonials", index, { profileUrl: e.target.value })}/></Field><Field label="Recommendation" full><textarea rows={4} value={item.quote} onChange={(e) => patchArray("testimonials", index, { quote: e.target.value })}/></Field></div></article>)}</div>
     </section>
 
     <section className={styles.panel}>

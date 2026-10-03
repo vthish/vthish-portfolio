@@ -23,6 +23,7 @@ export default async (req: Request) => {
   try {
     const payload = await req.json();
     const normalized = normalizePortfolioContent(payload);
+    normalized.updatedAt = new Date().toISOString();
     await savePortfolioContent(normalized);
     return Response.json(normalized, {
       headers: { "cache-control": "no-store" },

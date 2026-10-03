@@ -5,6 +5,7 @@ import {
   passwordMatches,
   sessionCookie,
 } from "../lib/admin-auth";
+import { clearLoginFailures, loginThrottle, recordLoginFailure } from "../lib/admin-rate-limit";
 
 export default async (req: Request) => {
   if (req.method === "GET") {
@@ -31,6 +32,14 @@ export default async (req: Request) => {
     return new Response("Method not allowed", { status: 405 });
   }
 
+  const throttle = await loginThrottle(req);
+  if (throttle.blocked) {
+    return Response.json(
+      { error: `Too many failed attempts. Try again in ${Math.ceil(throttle.retryAfterSeconds / 60)} minute(s).`, retryAfterSeconds: throttle.retryAfterSeconds },
+      { status: 429, headers: { "retry-after": String(throttle.retryAfterSeconds), "cache-control": "no-store" } }
+    );
+  }
+
   let body: { password?: unknown } = {};
   try {
     body = await req.json();
@@ -40,8 +49,20 @@ export default async (req: Request) => {
 
   const password = typeof body.password === "string" ? body.password : "";
   if (!passwordMatches(password)) {
-    return Response.json({ error: "Unauthorized" }, { status: 401 });
+    const failure = await recordLoginFailure(req);
+    if (failure.locked) {
+      return Response.json(
+        { error: "Too many failed attempts. Admin login is locked for 15 minutes.", retryAfterSeconds: failure.retryAfterSeconds },
+        { status: 429, headers: { "retry-after": String(failure.retryAfterSeconds), "cache-control": "no-store" } }
+      );
+    }
+    return Response.json(
+      { error: `Wrong password. ${failure.remainingAttempts} attempt(s) remaining before temporary lock.` },
+      { status: 401, headers: { "cache-control": "no-store" } }
+    );
   }
+
+  await clearLoginFailures(req);
 
   const token = createSessionToken();
   if (!token) {

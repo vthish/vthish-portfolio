@@ -309,3 +309,19 @@ Projects can be managed from the private CMS with up to 8 screenshots plus one o
 ### CMS media + contact upgrades
 
 The private portfolio CMS supports multi-image galleries across the main portfolio visuals, up to 12 project screenshots, universal project demo links (YouTube/Vimeo/Loom/Drive/TikTok and more, with a safe external fallback), and a public on-site email form powered by the existing Resend configuration.
+
+## 2026 professional maintenance upgrades
+
+This build keeps the existing public layout and animation system intact while adding maintenance/security/measurement features around it:
+
+- local admin draft autosave and recovery
+- JSON content backup/import with Netlify-media manifest
+- project status, live-demo URL and optional Problem / Role / Solution / Outcome case-study fields
+- hidden-until-used Recommendations/Testimonial CRUD
+- project-specific `/projects/<id>` share pages with dynamic Open Graph/Twitter metadata
+- JSON-LD Person/project/credential structured data, sitemap and robots metadata
+- failed-login throttling in addition to the admin inactivity/hard-expiry lock
+- analytics period filters, referrers and anonymous interaction events for CV/contact/project/social actions
+- client-side WebP/downscale optimization for larger admin image uploads when supported
+
+Optional fields/sections are conditional, so existing public content keeps its current visual presentation until those fields are populated in the admin.

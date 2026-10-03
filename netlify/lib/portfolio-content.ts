@@ -11,6 +11,7 @@ import {
   type ServiceItem,
   type SkillGroup,
   type SocialLink,
+  type TestimonialItem,
 } from "../../lib/portfolio-content";
 
 const STORE_NAME = "portfolio-content-v2";
@@ -108,12 +109,20 @@ function normalizeProject(value: unknown, index: number, fallback?: PortfolioPro
     category,
     description,
     href,
+    liveDemoUrl: optionalLink(source.liveDemoUrl) || fallback?.liveDemoUrl || "",
+    status: text(source.status, 50, fallback?.status || ""),
     chips: stringList(source.chips, 10, 55, fallback?.chips),
     stack: stringList(source.stack, 24, 65, fallback?.stack),
     icon: icon(source.icon, fallback?.icon || "code"),
     imageUrl: optionalLink(source.imageUrl) || fallback?.imageUrl || "",
     imageUrls: mediaUrls(source.imageUrls, source.imageUrl, fallback?.imageUrl || "", 12),
     videoUrl: optionalLink(source.videoUrl) || fallback?.videoUrl || "",
+    caseStudy: {
+      problem: text((source.caseStudy as Record<string, unknown> | undefined)?.problem, 900, fallback?.caseStudy?.problem || ""),
+      role: text((source.caseStudy as Record<string, unknown> | undefined)?.role, 500, fallback?.caseStudy?.role || ""),
+      solution: text((source.caseStudy as Record<string, unknown> | undefined)?.solution, 1200, fallback?.caseStudy?.solution || ""),
+      outcome: text((source.caseStudy as Record<string, unknown> | undefined)?.outcome, 900, fallback?.caseStudy?.outcome || ""),
+    },
   };
 }
 
@@ -195,6 +204,23 @@ function normalizeExperience(value: unknown, index: number): ExperienceItem | nu
   };
 }
 
+
+function normalizeTestimonial(value: unknown, index: number): TestimonialItem | null {
+  if (!value || typeof value !== "object") return null;
+  const source = value as Record<string, unknown>;
+  const name = text(source.name, 120);
+  const quote = text(source.quote, 1400);
+  if (!name || !quote) return null;
+  return {
+    id: safeId(source.id, `testimonial-${index + 1}`),
+    name,
+    role: text(source.role, 120),
+    company: text(source.company, 140),
+    quote,
+    profileUrl: optionalLink(source.profileUrl),
+  };
+}
+
 function normalizeSocial(value: unknown, index: number, fallback?: SocialLink): SocialLink | null {
   if (!value || typeof value !== "object") return fallback ?? null;
   const source = value as Record<string, unknown>;
@@ -242,6 +268,9 @@ export function normalizePortfolioContent(value: unknown): PortfolioContent {
 
   const expRaw = Array.isArray(source.experiences) ? source.experiences : [];
   const experiences = uniqueIds(expRaw.slice(0, 30).map(normalizeExperience).filter((item): item is ExperienceItem => Boolean(item)));
+
+  const testimonialRaw = Array.isArray(source.testimonials) ? source.testimonials : [];
+  const testimonials = uniqueIds(testimonialRaw.slice(0, 30).map(normalizeTestimonial).filter((item): item is TestimonialItem => Boolean(item)));
 
   return {
     cvUrl: requiredLink(source.cvUrl, defaults.cvUrl, true),
@@ -292,6 +321,8 @@ export function normalizePortfolioContent(value: unknown): PortfolioContent {
     experiences,
     certificatesHeading: section(source.certificatesHeading, defaults.certificatesHeading),
     certificates,
+    testimonialsHeading: section(source.testimonialsHeading, defaults.testimonialsHeading),
+    testimonials,
     photoBreak: {
       imageUrl: optionalLink(photoBreakSource.imageUrl) || defaults.photoBreak.imageUrl,
       imageUrls: mediaUrls(photoBreakSource.imageUrls, photoBreakSource.imageUrl, defaults.photoBreak.imageUrl, 10),
@@ -309,7 +340,7 @@ export function normalizePortfolioContent(value: unknown): PortfolioContent {
       emailButton: text(contactSource.emailButton, 80, defaults.contact.emailButton),
       phoneButton: text(contactSource.phoneButton, 80, defaults.contact.phoneButton),
     },
-    updatedAt: new Date().toISOString(),
+    updatedAt: text(source.updatedAt, 48) || undefined,
   };
 }
 

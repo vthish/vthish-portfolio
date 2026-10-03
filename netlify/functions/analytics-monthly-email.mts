@@ -1,6 +1,6 @@
 import type { Config } from "@netlify/functions";
 import { Resend } from "resend";
-import { getViews, previousMonthKey, summarize } from "../lib/analytics";
+import { getEvents, getViews, previousMonthKey, summarize, summarizeEvents } from "../lib/analytics";
 
 function escapeHtml(value: string) {
   return value.replace(/[&<>'"]/g, (character) => {
@@ -31,8 +31,9 @@ export default async () => {
   if (!apiKey) throw new Error("RESEND_API_KEY is not configured");
 
   const period = previousMonthKey(new Date());
-  const records = await getViews(period);
+  const [records, eventRecords] = await Promise.all([getViews(period), getEvents(period)]);
   const stats = summarize(records, period);
+  const interactions = summarizeEvents(eventRecords, period);
   const resend = new Resend(apiKey);
 
   const to = process.env.ANALYTICS_EMAIL_TO || "devthish17@gmail.com";
@@ -47,11 +48,16 @@ export default async () => {
         <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:26px">
           <div style="flex:1;min-width:180px;border:1px solid #1d2a44;border-radius:14px;padding:18px"><div style="color:#8390a7;font-size:12px">PAGE VIEWS</div><div style="font-size:34px;font-weight:800;margin-top:5px">${stats.totalViews}</div></div>
           <div style="flex:1;min-width:180px;border:1px solid #1d2a44;border-radius:14px;padding:18px"><div style="color:#8390a7;font-size:12px">UNIQUE BROWSERS</div><div style="font-size:34px;font-weight:800;margin-top:5px">${stats.uniqueVisitors}</div></div>
+          <div style="flex:1;min-width:180px;border:1px solid #1d2a44;border-radius:14px;padding:18px"><div style="color:#8390a7;font-size:12px">INTERACTIONS</div><div style="font-size:34px;font-weight:800;margin-top:5px">${interactions.totalEvents}</div></div>
         </div>
         <h2 style="font-size:16px;margin:0 0 6px">Top pages</h2>
         <table style="width:100%;border-collapse:collapse">${rows(stats.topPages)}</table>
+        <h2 style="font-size:16px;margin:22px 0 6px">Top referrers</h2>
+        <table style="width:100%;border-collapse:collapse">${rows(stats.topReferrers)}</table>
         <h2 style="font-size:16px;margin:22px 0 6px">Top countries</h2>
         <table style="width:100%;border-collapse:collapse">${rows(stats.topCountries)}</table>
+        <h2 style="font-size:16px;margin:22px 0 6px">Interaction events</h2>
+        <table style="width:100%;border-collapse:collapse">${rows(interactions.eventTypes)}</table>
         <p style="margin:26px 0 0;color:#667289;font-size:12px;line-height:1.6">Unique visitors are privacy-friendly browser IDs, not personally identified people. Bots are filtered where detectable.</p>
       </div>
     </div>`;

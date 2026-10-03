@@ -160,3 +160,42 @@ The Contact section includes a **Call me** button using the editable Identity â†
 ## Admin session security
 
 Analytics and Content Manager share the same secure session. It now auto-locks after **15 minutes of inactivity** and has a **2-hour absolute server-side expiry**, even if Lock is not clicked.
+
+## Professional admin upgrades
+
+### Backup / restore
+
+The top of `/admin/content` now includes a backup area.
+
+- **Export backup** downloads a JSON file containing the complete editable portfolio content plus a manifest of Netlify-managed media URLs referenced by that content.
+- **Import backup** loads a backup into the editor first; it does not publish until **Save portfolio changes** is pressed.
+- Media files themselves remain in the current Netlify site's `portfolio-media-v1` Blob store. The manifest is intended for recovery/auditing on the same site. Moving to a brand-new Netlify site still requires a Blob media migration.
+
+### Draft autosave
+
+While editing, unsaved content is cached locally in the browser. If the page is refreshed, closed, or the admin session auto-locks before publishing, a newer local draft can be restored or discarded on the next visit. A successful server save clears the local draft.
+
+### Project case studies, status and live demo
+
+Projects now support optional fields for:
+
+- Status (`Live`, `Completed`, `In Development`, etc.)
+- Live demo URL
+- Problem
+- My role
+- Solution
+- Outcome
+
+These fields are optional. Leaving them empty preserves the existing public project-card appearance. Each project also has an admin-only **Open share page** link at `/projects/<project-id>` for project-specific social/LinkedIn sharing metadata.
+
+### Testimonials / recommendations
+
+The admin now includes testimonial CRUD for name, role, company, recommendation text and an optional profile/source URL. The public Recommendations section stays completely hidden while there are no testimonials.
+
+### Upload optimization
+
+Large JPG/PNG/WebP images selected in the admin are optimized in the browser before upload when the browser supports it. Images are resized to a maximum dimension of 2200 px and encoded as WebP where this produces a useful result. The server's existing 4 MB upload limit remains the final authority. Videos are not recompressed in-browser.
+
+### Admin login protection
+
+In addition to the existing 15-minute inactivity lock and 2-hour hard session expiry, repeated failed admin login attempts are rate-limited. Five failed attempts within the current window cause a temporary 15-minute lock for that client fingerprint.

@@ -65,7 +65,8 @@ export function adminSessionExpiry(req: Request) {
 }
 
 export function isAdminAuthorized(req: Request) {
-  const suppliedPassword = req.headers.get("x-admin-password") || "";
-  if (suppliedPassword && passwordMatches(suppliedPassword)) return true;
+  // Protected admin endpoints accept only the signed HttpOnly session cookie.
+  // Keeping raw-password header auth would create a brute-force path that bypasses
+  // the login throttle in admin-auth.mts.
   return Boolean(adminSessionExpiry(req));
 }

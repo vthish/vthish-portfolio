@@ -2,25 +2,7 @@
 
 import { usePathname } from "next/navigation";
 import { useEffect, useRef } from "react";
-
-const VISITOR_KEY = "vthish:analytics:visitor:v1";
-
-function getVisitorId() {
-  try {
-    const existing = window.localStorage.getItem(VISITOR_KEY);
-    if (existing) return existing;
-
-    const id =
-      typeof window.crypto?.randomUUID === "function"
-        ? window.crypto.randomUUID()
-        : `${Date.now()}-${Math.random().toString(36).slice(2)}-${Math.random().toString(36).slice(2)}`;
-
-    window.localStorage.setItem(VISITOR_KEY, id);
-    return id;
-  } catch {
-    return `session-${Date.now()}-${Math.random().toString(36).slice(2)}`;
-  }
-}
+import { getVisitorId } from "@/lib/analytics-client";
 
 export default function AnalyticsTracker() {
   const pathname = usePathname();

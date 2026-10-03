@@ -65,3 +65,30 @@ https://vthish.dev/admin/content
 After a successful login, the browser receives a secure admin session with a 2-hour hard expiry and 15-minute inactivity auto-lock, so you can move between Analytics and Content Manager without entering the password again. Use **Lock** to end the session immediately; otherwise it auto-locks after 15 minutes of inactivity and has a 2-hour maximum lifetime.
 
 The content manager stores the CV link and editable project list in Netlify Blobs. No additional environment variable is needed.
+
+## Extended analytics
+
+The private dashboard now includes selectable periods:
+
+- Today
+- Last 7 days
+- Last 30 days
+- This month
+- This year
+- All time
+
+It also records privacy-friendly interaction events for portfolio actions such as:
+
+- CV clicks
+- WhatsApp clicks
+- Email form opens
+- Successfully sent contact emails
+- Call clicks
+- Project repository clicks
+- Project live-demo clicks
+- Certificate clicks
+- Social-link clicks
+
+The dashboard includes top referrers and interaction breakdowns/targets/pages. These events use the same hashed browser identifier model as the existing view analytics and do not store a raw IP address as the analytics visitor identity.
+
+The monthly analytics email now includes previous-month interaction counts and referrer information in addition to the original page-view summary.

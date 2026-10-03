@@ -3,6 +3,7 @@ import { getStore } from "@netlify/blobs";
 
 const STORE_NAME = "portfolio-analytics-v1";
 const VIEW_PREFIX = "views/";
+const EVENT_PREFIX = "events/";
 
 export type ViewRecord = {
   id: string;
@@ -15,6 +16,19 @@ export type ViewRecord = {
   referrerHost: string;
 };
 
+export type AnalyticsEventRecord = {
+  id: string;
+  timestamp: string;
+  event: string;
+  label: string;
+  path: string;
+  visitorHash: string;
+  country: string;
+  device: ViewRecord["device"];
+  browser: string;
+  referrerHost: string;
+};
+
 export type RankedItem = { label: string; count: number };
 
 export type AnalyticsSummary = {
@@ -23,6 +37,7 @@ export type AnalyticsSummary = {
   uniqueVisitors: number;
   topPages: RankedItem[];
   topCountries: RankedItem[];
+  topReferrers: RankedItem[];
   devices: RankedItem[];
   browsers: RankedItem[];
   daily: Array<{ date: string; views: number }>;
@@ -91,6 +106,13 @@ export async function saveView(record: ViewRecord) {
   await store.setJSON(key, record);
 }
 
+export async function saveEvent(record: AnalyticsEventRecord) {
+  const store = analyticsStore();
+  const month = record.timestamp.slice(0, 7);
+  const key = `${EVENT_PREFIX}${month}/${record.timestamp.replace(/[:.]/g, "-")}-${record.id}.json`;
+  await store.setJSON(key, record);
+}
+
 async function listKeys(prefix: string) {
   const store = analyticsStore();
   const keys: string[] = [];
@@ -102,9 +124,9 @@ async function listKeys(prefix: string) {
   return keys;
 }
 
-async function loadKeys(keys: string[]) {
+async function loadKeys<T>(keys: string[]) {
   const store = analyticsStore();
-  const records: ViewRecord[] = [];
+  const records: T[] = [];
   const chunkSize = 60;
 
   for (let i = 0; i < keys.length; i += chunkSize) {
@@ -114,7 +136,7 @@ async function loadKeys(keys: string[]) {
     );
 
     for (const value of values) {
-      if (value && typeof value === "object") records.push(value as ViewRecord);
+      if (value && typeof value === "object") records.push(value as T);
     }
   }
 
@@ -123,10 +145,15 @@ async function loadKeys(keys: string[]) {
 
 export async function getViews(month?: string) {
   const prefix = month ? `${VIEW_PREFIX}${month}/` : VIEW_PREFIX;
-  return loadKeys(await listKeys(prefix));
+  return loadKeys<ViewRecord>(await listKeys(prefix));
 }
 
-function rank(records: ViewRecord[], selector: (record: ViewRecord) => string, limit = 8) {
+export async function getEvents(month?: string) {
+  const prefix = month ? `${EVENT_PREFIX}${month}/` : EVENT_PREFIX;
+  return loadKeys<AnalyticsEventRecord>(await listKeys(prefix));
+}
+
+function rank<T>(records: T[], selector: (record: T) => string, limit = 8) {
   const counts = new Map<string, number>();
   for (const record of records) {
     const label = selector(record) || "Unknown";
@@ -154,10 +181,32 @@ export function summarize(records: ViewRecord[], period: string): AnalyticsSumma
     uniqueVisitors,
     topPages: rank(records, (record) => record.path),
     topCountries: rank(records, (record) => record.country),
+    topReferrers: rank(records, (record) => record.referrerHost),
     devices: rank(records, (record) => record.device),
     browsers: rank(records, (record) => record.browser),
     daily: [...dailyMap.entries()]
       .sort((a, b) => a[0].localeCompare(b[0]))
       .map(([date, views]) => ({ date, views })),
+  };
+}
+
+
+export type EventSummary = {
+  period: string;
+  totalEvents: number;
+  uniqueVisitors: number;
+  eventTypes: RankedItem[];
+  targets: RankedItem[];
+  pages: RankedItem[];
+};
+
+export function summarizeEvents(records: AnalyticsEventRecord[], period: string): EventSummary {
+  return {
+    period,
+    totalEvents: records.length,
+    uniqueVisitors: new Set(records.map((record) => record.visitorHash)).size,
+    eventTypes: rank(records, (record) => record.event, 12),
+    targets: rank(records, (record) => record.label || record.event, 12),
+    pages: rank(records, (record) => record.path, 12),
   };
 }

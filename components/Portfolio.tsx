@@ -12,6 +12,7 @@ import {
 import { FormEvent, ReactNode, useEffect, useRef, useState, type ComponentType } from "react";
 import { DEFAULT_PORTFOLIO_CONTENT, itemNumber, projectNumber, type ContentIconKey, type PortfolioContent, type ProjectIconKey, type SocialLink } from "@/lib/portfolio-content";
 import { resolveVideoSource } from "@/lib/video";
+import { trackPortfolioEvent } from "@/lib/analytics-client";
 
 type IconProps = { size?: number; className?: string };
 
@@ -321,7 +322,7 @@ function SectionTitle({ eyebrow, title, text }: { eyebrow: string; title: string
   );
 }
 
-function MagneticLink({ href, children, className = "", external = false }: { href: string; children?: ReactNode; className?: string; external?: boolean }) {
+function MagneticLink({ href, children, className = "", external = false, onClick }: { href: string; children?: ReactNode; className?: string; external?: boolean; onClick?: () => void }) {
   return (
     <motion.a
       href={href}
@@ -331,6 +332,7 @@ function MagneticLink({ href, children, className = "", external = false }: { hr
       transition={{ type: "spring", stiffness: 400, damping: 22 }}
       target={external ? "_blank" : undefined}
       rel={external ? "noreferrer" : undefined}
+      onClick={onClick}
     >
       {children}
     </motion.a>
@@ -608,10 +610,11 @@ function Chatbot({ content }: { content: PortfolioContent }) {
     if (q.includes("education") || q.includes("study")) return education ? `Education currently listed: ${education}.` : "There are no education entries listed right now.";
     if (q.includes("experience") || q.includes("work history") || q.includes("intern")) return content.experiences.length ? `Current experience includes ${content.experiences.map((item) => `${item.role} at ${item.company}`).join("; ")}.` : "No professional experience entries are published on the portfolio yet.";
     if (q.includes("certificate") || q.includes("certification") || q.includes("credential")) return content.certificates.length ? `Certificates currently published: ${content.certificates.map((item) => `${item.title}${item.issuer ? ` — ${item.issuer}` : ""}`).join("; ")}.` : "No certificates are published on the portfolio yet.";
+    if (q.includes("testimonial") || q.includes("recommendation") || q.includes("review")) return content.testimonials.length ? `Recommendations currently published: ${content.testimonials.map((item) => `${item.name}${item.company ? ` — ${item.company}` : ""}`).join("; ")}.` : "No testimonials or recommendations are published on the portfolio yet.";
     if (q.includes("hire") || q.includes("contact") || q.includes("whatsapp") || q.includes("available")) return `For work opportunities, use the Hire Me / WhatsApp button, call ${content.identity.phone}, or email ${content.identity.email}.`;
     if (q.includes("cv") || q.includes("resume")) return `Use the View CV button near the top of the portfolio to open ${name}’s current CV.`;
     if (q.includes("location") || q.includes("where")) return `${name} is based in ${content.identity.location}.`;
-    return `I can help with ${name}’s services, skills, projects, education, experience, certificates, CV or contact details.`;
+    return `I can help with ${name}’s services, skills, projects, education, experience, certificates, recommendations, CV or contact details.`;
   };
 
   const send = (text: string) => {
@@ -655,7 +658,7 @@ function Chatbot({ content }: { content: PortfolioContent }) {
               {typing && <div className="typing"><span/><span/><span/></div>}
             </div>
             <div className="quick-actions">{quickQuestions.map(({ label, prompt, Icon: QuickIcon }) => <button key={label} onClick={() => send(prompt)}><QuickIcon size={14}/><span>{label}</span></button>)}</div>
-            <div className="chat-contact-row"><a href={whatsappHref} target="_blank" rel="noreferrer"><Icons.message size={14}/> WhatsApp</a><a href={`mailto:${content.identity.email}`}><Icons.mail size={14}/> Email</a><a href={phoneHref}><Icons.phone size={14}/> Call</a></div>
+            <div className="chat-contact-row"><a href={whatsappHref} target="_blank" rel="noreferrer" onClick={() => trackPortfolioEvent("whatsapp_click", "Chatbot")}><Icons.message size={14}/> WhatsApp</a><a href={`mailto:${content.identity.email}`} onClick={() => trackPortfolioEvent("email_open", "Chatbot mailto")}><Icons.mail size={14}/> Email</a><a href={phoneHref} onClick={() => trackPortfolioEvent("call_click", "Chatbot")}><Icons.phone size={14}/> Call</a></div>
             <form className="chat-input" onSubmit={submit}><div className="chat-input-shell"><Icons.message size={15}/><input value={input} onChange={(e) => setInput(e.target.value)} placeholder={`Ask about ${name}...`} aria-label="Chat message" /></div><button type="submit" aria-label="Send message"><Icons.send size={17}/></button></form>
           </motion.aside>
         )}
@@ -722,6 +725,7 @@ function ContactEmailModal({ open, onClose, ownerName }: { open: boolean; onClos
       const payload = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(payload.error || "Could not send your message.");
       setStatus("sent");
+      trackPortfolioEvent("email_sent", subject || "Portfolio contact form");
       setName(""); setEmail(""); setSubject(""); setMessage(""); setWebsite("");
     } catch (err) {
       setStatus("error");
@@ -750,7 +754,7 @@ function ContactEmailModal({ open, onClose, ownerName }: { open: boolean; onClos
   </AnimatePresence>;
 }
 
-export default function Portfolio() {
+export default function Portfolio({ focusProjectId }: { focusProjectId?: string } = {}) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [roleIndex, setRoleIndex] = useState(0);
   const [mounted, setMounted] = useState(false);
@@ -758,6 +762,7 @@ export default function Portfolio() {
   const [showLoader, setShowLoader] = useState(true);
   const [pageVisible, setPageVisible] = useState(false);
   const [emailOpen, setEmailOpen] = useState(false);
+  const projectFocusDone = useRef(false);
   const mouseX = useMotionValue(-200);
   const mouseY = useMotionValue(-200);
   const smoothX = useSpring(mouseX, { stiffness: 180, damping: 28, mass: 0.25 });
@@ -804,6 +809,19 @@ export default function Portfolio() {
     if (roleIndex >= portfolioContent.hero.roles.length) setRoleIndex(0);
   }, [portfolioContent.hero.roles.length, roleIndex]);
 
+  useEffect(() => {
+    if (!focusProjectId || projectFocusDone.current || !pageVisible || showLoader) return;
+    if (!portfolioContent.projects.some((project) => project.id === focusProjectId)) return;
+    const timer = window.setTimeout(() => {
+      const target = document.getElementById(`project-${focusProjectId}`);
+      if (target) {
+        projectFocusDone.current = true;
+        target.scrollIntoView({ behavior: "smooth", block: "center" });
+      }
+    }, 220);
+    return () => window.clearTimeout(timer);
+  }, [focusProjectId, pageVisible, showLoader, portfolioContent.projects]);
+
   const content = portfolioContent;
   const projects = content.projects;
   const roles = content.hero.roles.length ? content.hero.roles : ["Software Engineer"];
@@ -818,12 +836,40 @@ export default function Portfolio() {
     ["Education", "#education"],
     ...(content.experiences.length ? [["Experience", "#experience"]] : []),
     ...(content.certificates.length ? [["Certificates", "#certificates"]] : []),
+    ...(content.testimonials.length ? [["Recommendations", "#testimonials"]] : []),
   ];
   const mobileNavItems = [...navItems, ["Contact", "#contact"]];
+  const structuredData = {
+    "@context": "https://schema.org",
+    "@type": "Person",
+    name: content.identity.name,
+    url: "https://vthish.dev",
+    email: `mailto:${content.identity.email}`,
+    telephone: content.identity.phone,
+    address: { "@type": "PostalAddress", addressLocality: content.identity.location },
+    jobTitle: content.hero.roles[0] || "Software Engineer",
+    sameAs: content.socialLinks.map((item) => item.href),
+    knowsAbout: [...content.skills.featured, ...content.skills.groups.flatMap((group) => group.items)].slice(0, 40),
+    subjectOf: content.projects.map((project) => ({
+      "@type": "SoftwareSourceCode",
+      name: project.title,
+      description: project.description,
+      codeRepository: project.href,
+      url: project.liveDemoUrl || project.href,
+      programmingLanguage: project.stack.slice(0, 8),
+    })),
+    hasCredential: content.certificates.map((item) => ({
+      "@type": "EducationalOccupationalCredential",
+      name: item.title,
+      recognizedBy: item.issuer ? { "@type": "Organization", name: item.issuer } : undefined,
+      url: item.credentialUrl || undefined,
+    })),
+  };
 
   return (
     <MotionConfig reducedMotion="user">
       <main className="site-shell">
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData).replace(/</g, "\\u003c") }} />
         <AnimatePresence onExitComplete={() => document.documentElement.classList.remove("portfolio-loading")}>
           {showLoader ? <InitialLoader /> : null}
         </AnimatePresence>
@@ -843,7 +889,7 @@ export default function Portfolio() {
             {navItems.map(([label, href]) => <a key={href} href={href}>{label}</a>)}
           </nav>
           <div className="nav-actions">
-            <MagneticLink className="nav-hire" href={whatsappHref} external><Icons.message size={16}/> Hire me</MagneticLink>
+            <MagneticLink className="nav-hire" href={whatsappHref} external onClick={() => trackPortfolioEvent("whatsapp_click", "Header hire me")}><Icons.message size={16}/> Hire me</MagneticLink>
             <button className="menu-button" onClick={() => setMenuOpen(true)} aria-label="Open menu"><Icons.menu/></button>
           </div>
         </motion.header>
@@ -882,12 +928,12 @@ export default function Portfolio() {
             <p className="hero-text">{content.hero.text}</p>
             <div className="hero-actions">
               <MagneticLink href="#projects" className="primary-btn">Explore my work <Icons.arrow size={18}/></MagneticLink>
-              <MagneticLink href={cvUrl} className="ghost-btn" external><Icons.download size={18}/> View CV</MagneticLink>
+              <MagneticLink href={cvUrl} className="ghost-btn" external onClick={() => trackPortfolioEvent("cv_click", "Hero View CV")}><Icons.download size={18}/> View CV</MagneticLink>
             </div>
             <div className="hero-socials">
               {socialLinks.map((item) => {
                 const SocialIcon = socialIconMap[item.icon] || Icons.external;
-                return <a key={item.id} href={item.href} target="_blank" rel="noreferrer" aria-label={item.label}><SocialIcon size={18}/><span>{item.label}</span></a>;
+                return <a key={item.id} href={item.href} target="_blank" rel="noreferrer" aria-label={item.label} onClick={() => trackPortfolioEvent("social_click", item.label)}><SocialIcon size={18}/><span>{item.label}</span></a>;
               })}
               <small>{content.identity.location}</small>
             </div>
@@ -933,8 +979,8 @@ export default function Portfolio() {
                 <div><strong>{content.about.curiosityValue}</strong><span>{content.about.curiosityLabel}</span></div>
               </div>
               <div className="about-contact-strip">
-                <a href={`mailto:${content.identity.email}`}><Icons.mail size={16}/> {content.identity.email}</a>
-                <a href={whatsappHref} target="_blank" rel="noreferrer"><Icons.message size={16}/> WhatsApp</a>
+                <a href={`mailto:${content.identity.email}`} onClick={() => trackPortfolioEvent("email_open", "About mailto")}><Icons.mail size={16}/> {content.identity.email}</a>
+                <a href={whatsappHref} target="_blank" rel="noreferrer" onClick={() => trackPortfolioEvent("whatsapp_click", "About")}><Icons.message size={16}/> WhatsApp</a>
               </div>
             </div>
           </div>
@@ -964,7 +1010,7 @@ export default function Portfolio() {
         <section className="section projects-section" id="projects">
           <div className="projects-heading-row">
             <SectionTitle {...content.projectsHeading} />
-            <a className="text-link" href={content.identity.githubUrl} target="_blank" rel="noreferrer">All GitHub projects <Icons.arrow size={16}/></a>
+            <a className="text-link" href={content.identity.githubUrl} target="_blank" rel="noreferrer" onClick={() => trackPortfolioEvent("social_click", "All GitHub projects")}>All GitHub projects <Icons.arrow size={16}/></a>
           </div>
           <div className="projects-list">
             {projects.map((project, index) => {
@@ -973,7 +1019,7 @@ export default function Portfolio() {
               const projectImages = project.imageUrls?.length ? project.imageUrls : project.imageUrl ? [project.imageUrl] : [];
               const hasProjectMedia = Boolean(project.videoUrl || projectImages.length);
               return (
-                <motion.a className={`project-card${hasProjectMedia ? " has-project-image" : ""}`} href={project.href} target="_blank" rel="noreferrer" key={project.id} initial={{ opacity: 0, y: 26, scale: 0.985 }} whileInView={{ opacity: 1, y: 0, scale: 1 }} viewport={{ once: true, margin: "-70px" }} transition={{ duration: 0.5, delay: Math.min(index * 0.045, 0.22) }} whileHover={{ y: -8 }}>
+                <motion.article id={`project-${project.id}`} className={`project-card${hasProjectMedia ? " has-project-image" : ""}`} key={project.id} role="link" tabIndex={0} aria-label={`Open ${project.title} repository`} onClick={(event) => { if ((event.target as HTMLElement).closest("a,button,video,iframe,input")) return; trackPortfolioEvent("project_repository_click", project.title); window.open(project.href, "_blank", "noopener,noreferrer"); }} onKeyDown={(event) => { if (event.key !== "Enter" && event.key !== " ") return; if ((event.target as HTMLElement).closest("a,button,input")) return; event.preventDefault(); trackPortfolioEvent("project_repository_click", project.title); window.open(project.href, "_blank", "noopener,noreferrer"); }} initial={{ opacity: 0, y: 26, scale: 0.985 }} whileInView={{ opacity: 1, y: 0, scale: 1 }} viewport={{ once: true, margin: "-70px" }} transition={{ duration: 0.5, delay: Math.min(index * 0.045, 0.22) }} whileHover={{ y: -8 }}>
                   <div className="project-visual">
                     {hasProjectMedia ? (
                       <ProjectMediaShowcase images={projectImages} videoUrl={project.videoUrl} title={project.title} number={number}/>
@@ -987,13 +1033,14 @@ export default function Portfolio() {
                     )}
                   </div>
                   <div className="project-content">
-                    <div className="project-meta-row"><small>{project.category}</small><span className="project-open"><Icons.github size={16}/> View repository <Icons.external size={14}/></span></div>
+                    <div className="project-meta-row"><div className="project-meta-label"><small>{project.category}</small>{project.status ? <span className="project-status">{project.status}</span> : null}</div><div className="project-links"><a className="project-open" href={project.href} target="_blank" rel="noreferrer" onClick={() => trackPortfolioEvent("project_repository_click", project.title)}><Icons.github size={16}/> View repository <Icons.external size={14}/></a>{project.liveDemoUrl ? <a className="project-open project-live" href={project.liveDemoUrl} target="_blank" rel="noreferrer" onClick={() => trackPortfolioEvent("project_live_demo_click", project.title)}><Icons.external size={15}/> Live demo</a> : null}</div></div>
                     <h3>{project.title}</h3><p>{project.description}</p>
                     <div className="project-stack-title"><Icons.code size={14}/> Tech stack</div>
                     <div className="project-tech-stack">{project.stack.map((item) => <span key={item}><i />{item}</span>)}</div>
                     <div className="project-chips">{project.chips.map((chip) => <span key={chip}>{chip}</span>)}</div>
+                    {project.caseStudy && Object.values(project.caseStudy).some(Boolean) ? <div className="project-case-study">{project.caseStudy.problem ? <div><small>Problem</small><span>{project.caseStudy.problem}</span></div> : null}{project.caseStudy.role ? <div><small>My role</small><span>{project.caseStudy.role}</span></div> : null}{project.caseStudy.solution ? <div><small>Solution</small><span>{project.caseStudy.solution}</span></div> : null}{project.caseStudy.outcome ? <div><small>Outcome</small><span>{project.caseStudy.outcome}</span></div> : null}</div> : null}
                   </div>
-                </motion.a>
+                </motion.article>
               );
             })}
           </div>
@@ -1036,7 +1083,19 @@ export default function Portfolio() {
             <div className="certificate-grid">
               {content.certificates.map((item, index) => {
                 const inner = <><div className="certificate-visual">{galleryImages(item.imageUrls, item.imageUrl).length ? <RotatingImage images={galleryImages(item.imageUrls, item.imageUrl)} alt={`${item.title} certificate`}/> : <div className="certificate-placeholder"><Icons.certificate size={42}/><span>CERTIFICATE</span></div>}<div className="certificate-number">{itemNumber(index)}</div></div><div className="certificate-copy"><div className="certificate-meta"><span>{item.issuer || "Certificate"}</span><i>{item.date}</i></div><h3>{item.title}</h3>{item.description ? <p>{item.description}</p> : null}{item.credentialUrl ? <span className="certificate-link">View credential <Icons.external size={14}/></span> : null}</div></>;
-                return item.credentialUrl ? <motion.a className="certificate-card" href={item.credentialUrl} target="_blank" rel="noreferrer" key={item.id} initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-70px" }} transition={{ duration: 0.5, delay: Math.min(index * 0.06, 0.24) }} whileHover={{ y: -6 }}>{inner}</motion.a> : <motion.article className="certificate-card" key={item.id} initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-70px" }} transition={{ duration: 0.5, delay: Math.min(index * 0.06, 0.24) }} whileHover={{ y: -6 }}>{inner}</motion.article>;
+                return item.credentialUrl ? <motion.a className="certificate-card" href={item.credentialUrl} target="_blank" rel="noreferrer" onClick={() => trackPortfolioEvent("certificate_click", item.title)} key={item.id} initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-70px" }} transition={{ duration: 0.5, delay: Math.min(index * 0.06, 0.24) }} whileHover={{ y: -6 }}>{inner}</motion.a> : <motion.article className="certificate-card" key={item.id} initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-70px" }} transition={{ duration: 0.5, delay: Math.min(index * 0.06, 0.24) }} whileHover={{ y: -6 }}>{inner}</motion.article>;
+              })}
+            </div>
+          </section>
+        )}
+
+        {content.testimonials.length > 0 && (
+          <section className="section testimonials-section" id="testimonials">
+            <SectionTitle {...content.testimonialsHeading} />
+            <div className="testimonial-grid">
+              {content.testimonials.map((item, index) => {
+                const inner = <><span className="testimonial-quote-mark">“</span><p>{item.quote}</p><div className="testimonial-person"><strong>{item.name}</strong><span>{[item.role, item.company].filter(Boolean).join(" · ")}</span></div></>;
+                return item.profileUrl ? <motion.a className="testimonial-card" href={item.profileUrl} target="_blank" rel="noreferrer" key={item.id} initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-70px" }} transition={{ duration: 0.5, delay: Math.min(index * 0.06, 0.24) }} whileHover={{ y: -5 }}>{inner}</motion.a> : <motion.article className="testimonial-card" key={item.id} initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-70px" }} transition={{ duration: 0.5, delay: Math.min(index * 0.06, 0.24) }} whileHover={{ y: -5 }}>{inner}</motion.article>;
               })}
             </div>
           </section>
@@ -1056,7 +1115,7 @@ export default function Portfolio() {
           <div className="contact-card">
             <motion.div initial={{ opacity: 0, y: 22 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
               <span className="eyebrow"><span />{content.contact.eyebrow}</span><h2>{content.contact.title}<br/><em>{content.contact.accent}</em></h2><p>{content.contact.text}</p>
-              <div className="contact-actions"><MagneticLink className="whatsapp-btn" href={whatsappHref} external><Icons.message size={20}/> {content.contact.whatsappButton} <Icons.arrow size={18}/></MagneticLink><button className="mail-btn" type="button" onClick={() => setEmailOpen(true)}><Icons.mail size={18}/> {content.contact.emailButton}</button><a className="phone-btn" href={phoneHref}><Icons.phone size={18}/> {content.contact.phoneButton}</a></div>
+              <div className="contact-actions"><MagneticLink className="whatsapp-btn" href={whatsappHref} external onClick={() => trackPortfolioEvent("whatsapp_click", "Contact")}><Icons.message size={20}/> {content.contact.whatsappButton} <Icons.arrow size={18}/></MagneticLink><button className="mail-btn" type="button" onClick={() => { trackPortfolioEvent("email_open", "Contact form"); setEmailOpen(true); }}><Icons.mail size={18}/> {content.contact.emailButton}</button><a className="phone-btn" href={phoneHref} onClick={() => trackPortfolioEvent("call_click", "Contact")}><Icons.phone size={18}/> {content.contact.phoneButton}</a></div>
             </motion.div>
             <motion.div className="contact-portrait" initial={{ opacity: 0, scale: 0.92 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }} transition={{ duration: 0.7 }}>
               <RotatingImage images={galleryImages(content.contact.imageUrls, content.contact.imageUrl)} alt={content.identity.name} interval={6800}/><div className="contact-ring ring-one"/><div className="contact-ring ring-two"/>
@@ -1068,8 +1127,8 @@ export default function Portfolio() {
           <div className="footer-top">
             <a className="brand footer-brand" href="#top"><span className="brand-mark">{content.identity.brandInitials}</span><span className="brand-copy">{content.identity.firstName.toUpperCase()}<br/><small>{content.identity.lastName.toUpperCase()}</small></span></a>
             <div className="footer-links footer-icon-links">
-              {socialLinks.map((item) => { const SocialIcon = socialIconMap[item.icon] || Icons.external; return <a key={item.id} href={item.href} target="_blank" rel="noreferrer"><SocialIcon size={18}/><span>{item.label}</span></a>; })}
-              <a href={`mailto:${content.identity.email}`}><Icons.mail size={18}/><span>Email</span></a><a href={whatsappHref} target="_blank" rel="noreferrer"><Icons.message size={18}/><span>WhatsApp</span></a>
+              {socialLinks.map((item) => { const SocialIcon = socialIconMap[item.icon] || Icons.external; return <a key={item.id} href={item.href} target="_blank" rel="noreferrer" onClick={() => trackPortfolioEvent("social_click", `Footer ${item.label}`)}><SocialIcon size={18}/><span>{item.label}</span></a>; })}
+              <a href={`mailto:${content.identity.email}`} onClick={() => trackPortfolioEvent("email_open", "Footer mailto")}><Icons.mail size={18}/><span>Email</span></a><a href={whatsappHref} target="_blank" rel="noreferrer" onClick={() => trackPortfolioEvent("whatsapp_click", "Footer")}><Icons.message size={18}/><span>WhatsApp</span></a>
             </div>
           </div>
           <div className="footer-bottom"><span>© {new Date().getFullYear()} {content.identity.name}. All rights reserved.</span><span>{content.identity.footerTagline}</span></div>

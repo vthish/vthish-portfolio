@@ -982,3 +982,36 @@ nextjs-portal { display: none !important; }
 @media (max-width: 480px) {
   .photo-break-copy { bottom: 44px; }
 }
+
+/* Optional portfolio extensions. These render only when matching CMS content exists. */
+.project-meta-label { display:flex; align-items:center; gap:9px; flex-wrap:wrap; min-width:0; }
+.project-status { display:inline-flex; align-items:center; min-height:22px; padding:4px 8px; border-radius:999px; border:1px solid rgba(120,162,255,.2); background:rgba(91,133,255,.08); color:#c8d9ff; font-size:8px; font-weight:800; letter-spacing:.1em; text-transform:uppercase; }
+.project-links { display:flex; align-items:center; justify-content:flex-end; gap:11px; flex-wrap:wrap; }
+.project-live { color:#9fc4ff; }
+.project-case-study { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; margin-top:20px; padding-top:18px; border-top:1px solid rgba(126,156,238,.12); }
+.project-case-study > div { display:grid; gap:5px; padding:11px 12px; border-radius:13px; border:1px solid rgba(126,156,238,.11); background:rgba(255,255,255,.022); }
+.project-case-study small { color:#8fb3ff; font-size:8px; font-weight:800; letter-spacing:.12em; text-transform:uppercase; }
+.project-case-study span { color:#afbdd3; font-size:11px; line-height:1.6; }
+
+.testimonials-section { border-top:1px solid rgba(120,150,235,.07); }
+.testimonial-grid { margin-top:48px; display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:16px; }
+.testimonial-card { min-height:250px; display:flex; flex-direction:column; padding:28px; border-radius:24px; border:1px solid rgba(128,158,238,.16); background:linear-gradient(145deg,rgba(27,39,72,.45),rgba(7,11,21,.78)); box-shadow:inset 0 1px 0 rgba(255,255,255,.025); color:inherit; }
+.testimonial-card:hover { border-color:rgba(112,153,255,.31); }
+.testimonial-quote-mark { color:#7ca9ff; font-size:42px; line-height:.8; font-weight:800; }
+.testimonial-card p { margin:18px 0 26px; color:#c1ccdf; line-height:1.8; font-size:13px; flex:1; }
+.testimonial-person { display:grid; gap:4px; padding-top:16px; border-top:1px solid rgba(128,158,238,.1); }
+.testimonial-person strong { color:#f0f5ff; font-size:13px; }
+.testimonial-person span { color:#8290a8; font-size:10px; line-height:1.5; }
+
+@media (max-width: 900px) {
+  .testimonial-grid { grid-template-columns:1fr 1fr; }
+  .project-case-study { grid-template-columns:1fr; }
+}
+@media (max-width: 620px) {
+  .testimonial-grid { grid-template-columns:1fr; }
+  .project-meta-row { align-items:flex-start; }
+  .project-links { justify-content:flex-start; }
+}
+
+/* Preserve the original whole-card project link interaction after adding separate repo/live links. */
+.project-card[role="link"] { cursor: pointer; }
