@@ -18,6 +18,8 @@ import {
 } from "@/lib/portfolio-content";
 import { resolveVideoSource } from "@/lib/video";
 import styles from "./content.module.css";
+import { useAdminAutoLock } from "@/lib/use-admin-auto-lock";
+import { ADMIN_IDLE_MINUTES, ADMIN_SESSION_HOURS } from "@/lib/admin-session-config";
 
 const iconLabels: Record<ContentIconKey, string> = {
   database: "Database",
@@ -239,6 +241,12 @@ export default function ContentManager() {
     setAuthenticated(false); setNotice("");
   }
 
+  useAdminAutoLock(Boolean(authenticated), () => {
+    setAuthenticated(false);
+    setNotice("");
+    setError(`Admin session locked after ${ADMIN_IDLE_MINUTES} minutes of inactivity or when the secure session expired.`);
+  });
+
   type EditableArrayKey = "socialLinks" | "projects" | "education" | "experiences" | "certificates";
   function patchArray(key: EditableArrayKey, index: number, patch: Record<string, unknown>) {
     setContent((current) => ({ ...current, [key]: (current[key] as unknown as Record<string, unknown>[]).map((item, i) => i === index ? { ...item, ...patch } : item) } as PortfolioContent)); setNotice("");
@@ -277,10 +285,10 @@ export default function ContentManager() {
   const counts = useMemo(() => `${content.projects.length} projects · ${content.education.length} education · ${content.experiences.length} experience · ${content.certificates.length} certificates`, [content]);
 
   if (loading && authenticated === null) return <main className={styles.page}><div className={styles.loading}>Loading admin…</div></main>;
-  if (!authenticated) return <main className={styles.page}><form className={styles.loginCard} onSubmit={login}><div className={styles.mark}>VT</div><span className={styles.eyebrow}>PRIVATE ADMIN</span><h1>Portfolio content</h1><p>Manage the live portfolio with the same password as your private analytics dashboard.</p><input type="password" value={password} onChange={(event) => setPassword(event.target.value)} placeholder="Admin password" autoComplete="current-password" autoFocus/><button type="submit" disabled={loading}>{loading ? "Signing in…" : "Open content manager"}</button>{error ? <div className={styles.error}>{error}</div> : null}<div className={styles.loginLinks}><a href="/admin/analytics">Analytics</a><a href="/">Portfolio</a></div></form></main>;
+  if (!authenticated) return <main className={styles.page}><form className={styles.loginCard} onSubmit={login}><div className={styles.mark}>VT</div><span className={styles.eyebrow}>PRIVATE ADMIN</span><h1>Portfolio content</h1><p>Manage the live portfolio with the same password as your private analytics dashboard. <strong>Auto-lock: {ADMIN_IDLE_MINUTES} min inactivity · {ADMIN_SESSION_HOURS}h max.</strong></p><input type="password" value={password} onChange={(event) => setPassword(event.target.value)} placeholder="Admin password" autoComplete="current-password" autoFocus/><button type="submit" disabled={loading}>{loading ? "Signing in…" : "Open content manager"}</button>{error ? <div className={styles.error}>{error}</div> : null}<div className={styles.loginLinks}><a href="/admin/analytics">Analytics</a><a href="/">Portfolio</a></div></form></main>;
 
   return <main className={styles.page}><div className={styles.dashboard}>
-    <header className={styles.header}><div><span className={styles.eyebrow}>VTHISH.DEV · PRIVATE ADMIN</span><h1>Portfolio content</h1><p>Full content manager · {counts}</p></div><div className={styles.headerActions}><a href="/admin/analytics">Analytics</a><a href="/" target="_blank" rel="noreferrer">Open portfolio ↗</a><button type="button" onClick={logout}>Lock</button></div></header>
+    <header className={styles.header}><div><span className={styles.eyebrow}>VTHISH.DEV · PRIVATE ADMIN</span><h1>Portfolio content</h1><p>Full content manager · {counts}</p></div><div className={styles.headerActions}><a href="/admin/analytics">Analytics</a><a href="/" target="_blank" rel="noreferrer">Open portfolio ↗</a><button type="button" onClick={logout}>Lock</button></div></header><div className={styles.sessionNote}>Auto-locks after {ADMIN_IDLE_MINUTES} min inactivity · max session {ADMIN_SESSION_HOURS}h</div>
 
     <section className={styles.panel}>
       <SectionHead kicker="SITE" title="Identity, contact & CV" text="Core details used across the hero, footer, WhatsApp, email and CV buttons."/>
@@ -373,7 +381,7 @@ export default function ContentManager() {
       <div className={styles.subHead}><strong>Photo break</strong></div>
       <div className={styles.formGrid}><Field label="Eyebrow"><input value={content.photoBreak.eyebrow} onChange={(e) => setContent((c) => ({ ...c, photoBreak: { ...c.photoBreak, eyebrow: e.target.value } }))}/></Field><Field label="Title" hint="Press Enter in this field to create a line break."><textarea rows={2} value={content.photoBreak.title} onChange={(e) => setContent((c) => ({ ...c, photoBreak: { ...c.photoBreak, title: e.target.value } }))}/></Field><MediaGalleryField label="Photo break images" values={content.photoBreak.imageUrls} legacyValue={content.photoBreak.imageUrl} onChange={(urls) => setContent((c) => ({ ...c, photoBreak: { ...c.photoBreak, imageUrls: urls, imageUrl: urls[0] || c.photoBreak.imageUrl } }))} max={10}/></div>
       <div className={styles.subHead}><strong>Contact</strong></div>
-      <div className={styles.formGrid}><Field label="Eyebrow"><input value={content.contact.eyebrow} onChange={(e) => setContent((c) => ({ ...c, contact: { ...c.contact, eyebrow: e.target.value } }))}/></Field><Field label="Heading"><input value={content.contact.title} onChange={(e) => setContent((c) => ({ ...c, contact: { ...c.contact, title: e.target.value } }))}/></Field><Field label="Accent text"><input value={content.contact.accent} onChange={(e) => setContent((c) => ({ ...c, contact: { ...c.contact, accent: e.target.value } }))}/></Field><Field label="WhatsApp button"><input value={content.contact.whatsappButton} onChange={(e) => setContent((c) => ({ ...c, contact: { ...c.contact, whatsappButton: e.target.value } }))}/></Field><Field label="Contact description" full><textarea rows={3} value={content.contact.text} onChange={(e) => setContent((c) => ({ ...c, contact: { ...c.contact, text: e.target.value } }))}/></Field><Field label="Email button"><input value={content.contact.emailButton} onChange={(e) => setContent((c) => ({ ...c, contact: { ...c.contact, emailButton: e.target.value } }))}/></Field><MediaGalleryField label="Contact photos" values={content.contact.imageUrls} legacyValue={content.contact.imageUrl} onChange={(urls) => setContent((c) => ({ ...c, contact: { ...c.contact, imageUrls: urls, imageUrl: urls[0] || c.contact.imageUrl } }))} max={10}/></div>
+      <div className={styles.formGrid}><Field label="Eyebrow"><input value={content.contact.eyebrow} onChange={(e) => setContent((c) => ({ ...c, contact: { ...c.contact, eyebrow: e.target.value } }))}/></Field><Field label="Heading"><input value={content.contact.title} onChange={(e) => setContent((c) => ({ ...c, contact: { ...c.contact, title: e.target.value } }))}/></Field><Field label="Accent text"><input value={content.contact.accent} onChange={(e) => setContent((c) => ({ ...c, contact: { ...c.contact, accent: e.target.value } }))}/></Field><Field label="WhatsApp button"><input value={content.contact.whatsappButton} onChange={(e) => setContent((c) => ({ ...c, contact: { ...c.contact, whatsappButton: e.target.value } }))}/></Field><Field label="Contact description" full><textarea rows={3} value={content.contact.text} onChange={(e) => setContent((c) => ({ ...c, contact: { ...c.contact, text: e.target.value } }))}/></Field><Field label="Email button"><input value={content.contact.emailButton} onChange={(e) => setContent((c) => ({ ...c, contact: { ...c.contact, emailButton: e.target.value } }))}/></Field><Field label="Phone button"><input value={content.contact.phoneButton} onChange={(e) => setContent((c) => ({ ...c, contact: { ...c.contact, phoneButton: e.target.value } }))}/></Field><MediaGalleryField label="Contact photos" values={content.contact.imageUrls} legacyValue={content.contact.imageUrl} onChange={(urls) => setContent((c) => ({ ...c, contact: { ...c.contact, imageUrls: urls, imageUrl: urls[0] || c.contact.imageUrl } }))} max={10}/></div>
     </section>
 
     <div className={styles.saveBar}><div>{error ? <span className={styles.errorInline}>{error}</span> : notice ? <span className={styles.success}>{notice}</span> : <span>Changes stay private until you press Save.</span>}</div><button type="button" onClick={save} disabled={saving}>{saving ? "Saving…" : "Save portfolio changes"}</button></div>

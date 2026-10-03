@@ -151,6 +151,7 @@ export type PortfolioContent = {
     imageUrls?: string[];
     whatsappButton: string;
     emailButton: string;
+    phoneButton: string;
   };
   updatedAt?: string;
 };
@@ -273,6 +274,7 @@ export const DEFAULT_PORTFOLIO_CONTENT: PortfolioContent = {
     imageUrls: ["/images/contact.webp"],
     whatsappButton: "Start on WhatsApp",
     emailButton: "Email me",
+    phoneButton: "Call me",
   },
 };
 

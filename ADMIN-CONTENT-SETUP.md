@@ -151,3 +151,12 @@ Messages are sent to the email currently saved in **Identity → Email** in `/ad
 This feature reuses the existing `RESEND_API_KEY` and verified Resend domain. No new environment variable is required. `CONTACT_EMAIL_FROM` is optional; if it is not configured, the function reuses the verified address inside `ANALYTICS_EMAIL_FROM` with the display name `vthish.dev Contact`.
 
 The endpoint also includes a honeypot field, server-side validation and a privacy-friendly rate limit to reduce automated spam. The recipient address is fixed on the server from your portfolio content, so visitors cannot use the form as an open relay to arbitrary email addresses.
+
+
+## Phone contact button
+
+The Contact section includes a **Call me** button using the editable Identity → Phone number. On phones it opens the device dialer through a `tel:` link. The button label is editable under Contact → Phone button.
+
+## Admin session security
+
+Analytics and Content Manager share the same secure session. It now auto-locks after **15 minutes of inactivity** and has a **2-hour absolute server-side expiry**, even if Lock is not clicked.

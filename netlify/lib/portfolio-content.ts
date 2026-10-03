@@ -307,6 +307,7 @@ export function normalizePortfolioContent(value: unknown): PortfolioContent {
       imageUrls: mediaUrls(contactSource.imageUrls, contactSource.imageUrl, defaults.contact.imageUrl, 10),
       whatsappButton: text(contactSource.whatsappButton, 80, defaults.contact.whatsappButton),
       emailButton: text(contactSource.emailButton, 80, defaults.contact.emailButton),
+      phoneButton: text(contactSource.phoneButton, 80, defaults.contact.phoneButton),
     },
     updatedAt: new Date().toISOString(),
   };

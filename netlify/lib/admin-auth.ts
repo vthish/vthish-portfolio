@@ -1,7 +1,7 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
+import { ADMIN_SESSION_HOURS } from "../../lib/admin-session-config";
 
 export const ADMIN_COOKIE_NAME = "vt_admin_session";
-const SESSION_HOURS = 12;
 
 function safeEqual(left: string, right: string) {
   const a = Buffer.from(left);
@@ -28,12 +28,12 @@ export function passwordMatches(candidate: string) {
 export function createSessionToken() {
   const password = configuredPassword();
   if (!password) return "";
-  const expiresAt = String(Date.now() + SESSION_HOURS * 60 * 60 * 1000);
+  const expiresAt = String(Date.now() + ADMIN_SESSION_HOURS * 60 * 60 * 1000);
   return `${expiresAt}.${signature(expiresAt, password)}`;
 }
 
 export function sessionCookie(token: string) {
-  return `${ADMIN_COOKIE_NAME}=${token}; Path=/; Max-Age=${SESSION_HOURS * 60 * 60}; HttpOnly; Secure; SameSite=Strict`;
+  return `${ADMIN_COOKIE_NAME}=${token}; Path=/; Max-Age=${ADMIN_SESSION_HOURS * 60 * 60}; HttpOnly; Secure; SameSite=Strict`;
 }
 
 export function clearSessionCookie() {
@@ -49,17 +49,23 @@ function readCookie(req: Request) {
   return "";
 }
 
-function validSession(token: string) {
+function validSessionExpiry(token: string) {
   const password = configuredPassword();
-  if (!password || !token) return false;
+  if (!password || !token) return null;
   const [expiresAt, mac] = token.split(".");
-  if (!expiresAt || !mac || !/^\d+$/.test(expiresAt)) return false;
-  if (Number(expiresAt) <= Date.now()) return false;
-  return safeEqual(mac, signature(expiresAt, password));
+  if (!expiresAt || !mac || !/^\d+$/.test(expiresAt)) return null;
+  const expiry = Number(expiresAt);
+  if (!Number.isFinite(expiry) || expiry <= Date.now()) return null;
+  if (!safeEqual(mac, signature(expiresAt, password))) return null;
+  return expiry;
+}
+
+export function adminSessionExpiry(req: Request) {
+  return validSessionExpiry(readCookie(req));
 }
 
 export function isAdminAuthorized(req: Request) {
   const suppliedPassword = req.headers.get("x-admin-password") || "";
   if (suppliedPassword && passwordMatches(suppliedPassword)) return true;
-  return validSession(readCookie(req));
+  return Boolean(adminSessionExpiry(req));
 }

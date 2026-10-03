@@ -62,6 +62,6 @@ The same `ANALYTICS_ADMIN_PASSWORD` also unlocks:
 https://vthish.dev/admin/content
 ```
 
-After a successful login, the browser receives a secure 12-hour admin session cookie, so you can move between Analytics and Content Manager without entering the password again. Use **Lock** to end the session.
+After a successful login, the browser receives a secure admin session with a 2-hour hard expiry and 15-minute inactivity auto-lock, so you can move between Analytics and Content Manager without entering the password again. Use **Lock** to end the session immediately; otherwise it auto-locks after 15 minutes of inactivity and has a 2-hour maximum lifetime.
 
 The content manager stores the CV link and editable project list in Netlify Blobs. No additional environment variable is needed.

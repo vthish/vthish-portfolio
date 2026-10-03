@@ -579,6 +579,7 @@ function Chatbot({ content }: { content: PortfolioContent }) {
   const chatBodyRef = useRef<HTMLDivElement | null>(null);
   const name = content.identity.firstName || content.identity.name;
   const whatsappHref = `https://wa.me/${content.identity.whatsappNumber}?text=${encodeURIComponent(content.identity.whatsappMessage)}`;
+  const phoneHref = `tel:${content.identity.phone.replace(/[^+\d]/g, "")}`;
   const [messages, setMessages] = useState([
     { from: "bot", text: `Hi! I’m VT Assistant. Ask me about ${name}’s services, tech stack, projects, education, experience, certificates or contact details.` },
   ]);
@@ -654,7 +655,7 @@ function Chatbot({ content }: { content: PortfolioContent }) {
               {typing && <div className="typing"><span/><span/><span/></div>}
             </div>
             <div className="quick-actions">{quickQuestions.map(({ label, prompt, Icon: QuickIcon }) => <button key={label} onClick={() => send(prompt)}><QuickIcon size={14}/><span>{label}</span></button>)}</div>
-            <div className="chat-contact-row"><a href={whatsappHref} target="_blank" rel="noreferrer"><Icons.message size={14}/> WhatsApp</a><a href={`mailto:${content.identity.email}`}><Icons.mail size={14}/> Email</a></div>
+            <div className="chat-contact-row"><a href={whatsappHref} target="_blank" rel="noreferrer"><Icons.message size={14}/> WhatsApp</a><a href={`mailto:${content.identity.email}`}><Icons.mail size={14}/> Email</a><a href={phoneHref}><Icons.phone size={14}/> Call</a></div>
             <form className="chat-input" onSubmit={submit}><div className="chat-input-shell"><Icons.message size={15}/><input value={input} onChange={(e) => setInput(e.target.value)} placeholder={`Ask about ${name}...`} aria-label="Chat message" /></div><button type="submit" aria-label="Send message"><Icons.send size={17}/></button></form>
           </motion.aside>
         )}
@@ -808,6 +809,7 @@ export default function Portfolio() {
   const roles = content.hero.roles.length ? content.hero.roles : ["Software Engineer"];
   const cvUrl = content.cvUrl;
   const whatsappHref = `https://wa.me/${content.identity.whatsappNumber}?text=${encodeURIComponent(content.identity.whatsappMessage)}`;
+  const phoneHref = `tel:${content.identity.phone.replace(/[^+\d]/g, "")}`;
   const socialLinks = content.socialLinks;
   const navItems = [
     ["About", "#about"],
@@ -1054,7 +1056,7 @@ export default function Portfolio() {
           <div className="contact-card">
             <motion.div initial={{ opacity: 0, y: 22 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
               <span className="eyebrow"><span />{content.contact.eyebrow}</span><h2>{content.contact.title}<br/><em>{content.contact.accent}</em></h2><p>{content.contact.text}</p>
-              <div className="contact-actions"><MagneticLink className="whatsapp-btn" href={whatsappHref} external><Icons.message size={20}/> {content.contact.whatsappButton} <Icons.arrow size={18}/></MagneticLink><button className="mail-btn" type="button" onClick={() => setEmailOpen(true)}><Icons.mail size={18}/> {content.contact.emailButton}</button></div>
+              <div className="contact-actions"><MagneticLink className="whatsapp-btn" href={whatsappHref} external><Icons.message size={20}/> {content.contact.whatsappButton} <Icons.arrow size={18}/></MagneticLink><button className="mail-btn" type="button" onClick={() => setEmailOpen(true)}><Icons.mail size={18}/> {content.contact.emailButton}</button><a className="phone-btn" href={phoneHref}><Icons.phone size={18}/> {content.contact.phoneButton}</a></div>
             </motion.div>
             <motion.div className="contact-portrait" initial={{ opacity: 0, scale: 0.92 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }} transition={{ duration: 0.7 }}>
               <RotatingImage images={galleryImages(content.contact.imageUrls, content.contact.imageUrl)} alt={content.identity.name} interval={6800}/><div className="contact-ring ring-one"/><div className="contact-ring ring-two"/>

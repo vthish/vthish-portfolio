@@ -376,7 +376,7 @@ html.portfolio-loading body { overflow: hidden; }
 .role-window strong { display: block; color: var(--blue); font-weight: 780; }
 .hero-text { max-width: 620px; margin: 20px 0 0; color: #aeb8cc; line-height: 1.8; font-size: 15px; }
 .hero-actions { display: flex; align-items: center; gap: 12px; margin-top: 32px; flex-wrap: wrap; }
-.primary-btn, .ghost-btn, .whatsapp-btn, .mail-btn { min-height: 50px; display: inline-flex; align-items: center; justify-content: center; gap: 10px; border-radius: 14px; font-weight: 800; font-size: 12px; }
+.primary-btn, .ghost-btn, .whatsapp-btn, .mail-btn, .phone-btn { min-height: 50px; display: inline-flex; align-items: center; justify-content: center; gap: 10px; border-radius: 14px; font-weight: 800; font-size: 12px; }
 .primary-btn { padding: 0 20px; color: #f9fbff; background: linear-gradient(135deg, #467dff, #725df0); box-shadow: 0 16px 42px rgba(77, 115, 255, .22); }
 .ghost-btn { padding: 0 18px; border: 1px solid var(--line); background: rgba(255,255,255,.035); color: #e5ebf8; }
 .hero-socials { display: flex; align-items: center; gap: 12px; margin-top: 34px; flex-wrap: wrap; }
@@ -546,7 +546,9 @@ html.portfolio-loading body { overflow: hidden; }
 .contact-card p { color: #99a5bb; line-height: 1.75; max-width: 600px; margin: 21px 0 0; font-size: 13px; }
 .contact-actions { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 28px; }
 .whatsapp-btn { padding: 0 18px; color: #f7faff; background: linear-gradient(135deg, #467dff, #6b5ae8); }
-.mail-btn { padding: 0 18px; background: var(--card); border: 1px solid var(--line); }
+.mail-btn { padding: 0 18px; background: var(--card); border: 1px solid var(--line); color: #eef3ff; }
+.phone-btn { padding: 0 18px; background: rgba(255,255,255,.035); border: 1px solid rgba(125,155,235,.22); color: #eaf0ff; transition: transform .22s ease, border-color .22s ease, background .22s ease; }
+.phone-btn:hover { transform: translateY(-2px); border-color: rgba(102,151,255,.5); background: rgba(90,126,218,.1); }
 .contact-portrait { position: relative; height: 500px; align-self: end; }
 .contact-portrait img { object-fit: contain; object-position: center bottom; z-index: 2; }
 .contact-ring { position: absolute; border-radius: 50%; border: 1px solid rgba(98,145,255,.2); left: 50%; top: 52%; transform: translate(-50%,-50%); }
@@ -594,7 +596,7 @@ footer { width: min(calc(100% - 48px), var(--max)); margin: 0 auto; padding: 26p
 .quick-actions button { min-width: 0; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 5px; padding: 8px 4px; border-radius: 11px; border: 1px solid rgba(126,157,236,.13); background: rgba(255,255,255,.035); color: #b8c5da; font-size: 8px; transition: .2s ease; }
 .quick-actions button:hover { color: #fff; border-color: rgba(106,150,255,.3); background: rgba(82,126,255,.08); transform: translateY(-2px); }
 .chat-contact-row { position: relative; z-index: 2; display: flex; gap: 8px; padding: 0 12px 10px; }
-.chat-contact-row a { flex: 1; min-height: 34px; display: inline-flex; align-items: center; justify-content: center; gap: 7px; border-radius: 10px; border: 1px solid rgba(125,157,236,.14); background: rgba(255,255,255,.035); color: #c9d5e9; font-size: 9px; font-weight: 650; }
+.chat-contact-row a { flex: 1; min-width: 0; min-height: 34px; display: inline-flex; align-items: center; justify-content: center; gap: 7px; border-radius: 10px; border: 1px solid rgba(125,157,236,.14); background: rgba(255,255,255,.035); color: #c9d5e9; font-size: 9px; font-weight: 650; }
 .chat-contact-row a:hover { color: white; border-color: rgba(105,149,255,.28); }
 .chat-input { position: relative; z-index: 2; display: flex; gap: 8px; padding: 12px; border-top: 1px solid rgba(128,158,236,.13); background: rgba(5,9,18,.66); }
 .chat-input-shell { flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; border: 1px solid rgba(128,159,239,.16); border-radius: 12px; padding: 0 11px; color: #71809a; background: rgba(255,255,255,.035); }

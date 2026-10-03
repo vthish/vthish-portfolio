@@ -2,6 +2,8 @@
 
 import { FormEvent, useEffect, useState } from "react";
 import styles from "./analytics.module.css";
+import { useAdminAutoLock } from "@/lib/use-admin-auto-lock";
+import { ADMIN_IDLE_MINUTES, ADMIN_SESSION_HOURS } from "@/lib/admin-session-config";
 
 type RankedItem = { label: string; count: number };
 type Summary = {
@@ -122,6 +124,12 @@ export default function AnalyticsDashboard() {
     setData(null);
   }
 
+  useAdminAutoLock(Boolean(authenticated), () => {
+    setAuthenticated(false);
+    setData(null);
+    setError(`Admin session locked after ${ADMIN_IDLE_MINUTES} minutes of inactivity or when the secure session expired.`);
+  });
+
   if (loading && authenticated === null) {
     return <main className={styles.page}><div className={styles.empty}>Loading admin…</div></main>;
   }
@@ -133,7 +141,7 @@ export default function AnalyticsDashboard() {
           <div className={styles.mark}>VT</div>
           <span className={styles.eyebrow}>PRIVATE ADMIN</span>
           <h1>Portfolio analytics</h1>
-          <p>Enter your admin password. The same session also unlocks portfolio content management.</p>
+          <p>Enter your admin password. The same session also unlocks portfolio content management. <strong>Auto-lock: {ADMIN_IDLE_MINUTES} min inactivity · {ADMIN_SESSION_HOURS}h max.</strong></p>
           <input
             type="password"
             value={password}
@@ -160,7 +168,7 @@ export default function AnalyticsDashboard() {
           <div>
             <span className={styles.eyebrow}>VTHISH.DEV · PRIVATE</span>
             <h1>Portfolio analytics</h1>
-            <p>Updated {new Date(data.generatedAt).toLocaleString()}</p>
+            <p>Updated {new Date(data.generatedAt).toLocaleString()} · Auto-lock {ADMIN_IDLE_MINUTES} min idle · {ADMIN_SESSION_HOURS}h max</p>
           </div>
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap", justifyContent: "flex-end" }}>
             <a className={styles.lockButton} href="/admin/content">Manage content</a>

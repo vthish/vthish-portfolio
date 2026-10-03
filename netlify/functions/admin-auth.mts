@@ -1,15 +1,16 @@
 import {
+  adminSessionExpiry,
   clearSessionCookie,
   createSessionToken,
-  isAdminAuthorized,
   passwordMatches,
   sessionCookie,
 } from "../lib/admin-auth";
 
 export default async (req: Request) => {
   if (req.method === "GET") {
+    const expiresAt = adminSessionExpiry(req);
     return Response.json(
-      { authenticated: isAdminAuthorized(req) },
+      { authenticated: Boolean(expiresAt), expiresAt },
       { headers: { "cache-control": "no-store" } }
     );
   }
@@ -48,7 +49,7 @@ export default async (req: Request) => {
   }
 
   return Response.json(
-    { authenticated: true },
+    { authenticated: true, expiresAt: Number(token.split(".")[0]) || null },
     {
       headers: {
         "set-cookie": sessionCookie(token),
