@@ -38,6 +38,7 @@ const socialIconLabels: Record<SocialLink["icon"], string> = {
   github: "GitHub",
   gitlab: "GitLab",
   linkedin: "LinkedIn",
+  x: "X / Twitter",
   link: "External link",
 };
 

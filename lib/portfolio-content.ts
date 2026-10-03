@@ -23,7 +23,7 @@ export type SocialLink = {
   id: string;
   label: string;
   href: string;
-  icon: "github" | "gitlab" | "linkedin" | "link";
+  icon: "github" | "gitlab" | "linkedin" | "x" | "link";
 };
 
 export type PortfolioProject = {
@@ -172,10 +172,12 @@ export type PortfolioContent = {
     emailButton: string;
     phoneButton: string;
   };
+  schemaVersion?: number;
   updatedAt?: string;
 };
 
 export const DEFAULT_PORTFOLIO_CONTENT: PortfolioContent = {
+  schemaVersion: 2,
   cvUrl: "https://drive.google.com/file/d/1Mi9rKwP5plZMO8qltgGDapabKt1fj0gu/view?usp=drivesdk",
   identity: {
     name: "Venusha Thishan",
@@ -194,6 +196,7 @@ export const DEFAULT_PORTFOLIO_CONTENT: PortfolioContent = {
     { id: "github", label: "GitHub", href: "https://github.com/vthish", icon: "github" },
     { id: "gitlab", label: "GitLab", href: "https://gitlab.com/vthish-dev", icon: "gitlab" },
     { id: "linkedin", label: "LinkedIn", href: "https://www.linkedin.com/in/venusha-thishan", icon: "linkedin" },
+    { id: "x", label: "X", href: "https://x.com/vthish_17", icon: "x" },
   ],
   hero: {
     status: "OPEN TO SOFTWARE OPPORTUNITIES",

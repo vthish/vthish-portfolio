@@ -227,7 +227,7 @@ function normalizeSocial(value: unknown, index: number, fallback?: SocialLink): 
   const label = text(source.label, 50, fallback?.label || "");
   const href = requiredLink(source.href, fallback?.href || DEFAULT_PORTFOLIO_CONTENT.identity.githubUrl, false);
   const iconValue = text(source.icon, 20, fallback?.icon || "link");
-  const socialIcon: SocialLink["icon"] = ["github", "gitlab", "linkedin", "link"].includes(iconValue)
+  const socialIcon: SocialLink["icon"] = ["github", "gitlab", "linkedin", "x", "link"].includes(iconValue)
     ? iconValue as SocialLink["icon"]
     : "link";
   if (!label) return null;
@@ -260,8 +260,12 @@ export function normalizePortfolioContent(value: unknown): PortfolioContent {
   const servicesRaw = Array.isArray(skillsSource.services) ? skillsSource.services : defaults.skills.services;
   const services = uniqueIds(servicesRaw.slice(0, 20).map((item, index) => normalizeService(item, index, defaults.skills.services[index])).filter((item): item is ServiceItem => Boolean(item)));
 
+  const sourceSchemaVersion = typeof source.schemaVersion === "number" ? source.schemaVersion : 1;
   const socialRaw = Array.isArray(source.socialLinks) ? source.socialLinks : defaults.socialLinks;
-  const socialLinks = uniqueIds(socialRaw.slice(0, 12).map((item, index) => normalizeSocial(item, index, defaults.socialLinks[index])).filter((item): item is SocialLink => Boolean(item)));
+  let socialLinks = uniqueIds(socialRaw.slice(0, 12).map((item, index) => normalizeSocial(item, index, defaults.socialLinks[index])).filter((item): item is SocialLink => Boolean(item)));
+  if (sourceSchemaVersion < 2 && !socialLinks.some((item) => item.id === "x" || /(^|\.)x\.com$/i.test((() => { try { return new URL(item.href).hostname; } catch { return ""; } })()))) {
+    socialLinks = [...socialLinks, { id: "x", label: "X", href: "https://x.com/vthish_17", icon: "x" as const }].slice(0, 12);
+  }
 
   const certRaw = Array.isArray(source.certificates) ? source.certificates : [];
   const certificates = uniqueIds(certRaw.slice(0, 30).map(normalizeCertificate).filter((item): item is CertificateItem => Boolean(item)));
@@ -273,6 +277,7 @@ export function normalizePortfolioContent(value: unknown): PortfolioContent {
   const testimonials = uniqueIds(testimonialRaw.slice(0, 30).map(normalizeTestimonial).filter((item): item is TestimonialItem => Boolean(item)));
 
   return {
+    schemaVersion: 2,
     cvUrl: requiredLink(source.cvUrl, defaults.cvUrl, true),
     identity: {
       name: text(identitySource.name, 100, defaults.identity.name),

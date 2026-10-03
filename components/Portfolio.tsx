@@ -46,6 +46,11 @@ const Icons = {
   linkedin: (p: IconProps) => (
     <Icon {...p}><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-4 0v7h-4V9h4v2"/><rect width="4" height="12" x="2" y="9"/><circle cx="4" cy="4" r="2"/></Icon>
   ),
+  x: (p: IconProps) => (
+    <svg width={p.size || 20} height={p.size || 20} viewBox="0 0 24 24" aria-hidden="true" className={p.className || ""} fill="currentColor">
+      <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24h-6.657l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231 5.45-6.231Zm-1.161 17.52h1.833L7.084 4.126H5.117L17.083 19.77Z"/>
+    </svg>
+  ),
   mail: (p: IconProps) => (
     <Icon {...p}><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-10 6L2 7"/></Icon>
   ),
@@ -129,6 +134,7 @@ const socialIconMap: Record<SocialLink["icon"], ComponentType<IconProps>> = {
   github: Icons.github,
   gitlab: Icons.gitlab,
   linkedin: Icons.linkedin,
+  x: Icons.x,
   link: Icons.external,
 };
 
@@ -602,7 +608,7 @@ function Chatbot({ content }: { content: PortfolioContent }) {
     const projectNames = content.projects.map((project) => project.title).join(", ");
     const education = content.education.map((item) => `${item.title}${item.place ? ` — ${item.place}` : ""}`).join("; ");
 
-    if (q.includes("phone") || q.includes("number") || q.includes("call")) return `${name}’s contact number is ${content.identity.phone}. You can also use the Hire Me button to open WhatsApp with a ready-to-send message.`;
+    if (q.includes("phone") || q.includes("number") || q.includes("call") || q.includes("mobile") || q.includes("telephone") || q.includes("contact no") || q.includes("phone no")) return `${name}’s phone number is ${content.identity.phone}. Tap Call me to open your phone app, or use WhatsApp if you prefer messaging.`;
     if (q.includes("email") || q.includes("mail")) return `You can email ${name} at ${content.identity.email}.`;
     if (q.includes("service") || q.includes("offer") || q.includes("what do you do")) return services ? `${name} currently highlights these services: ${services}.` : "Open the Skills section to see current capabilities.";
     if (q.includes("skill") || q.includes("stack") || q.includes("language") || q.includes("framework")) return allSkills ? `Current portfolio skills include ${allSkills}.` : "Open the Skills section to see the current stack.";
@@ -611,7 +617,7 @@ function Chatbot({ content }: { content: PortfolioContent }) {
     if (q.includes("experience") || q.includes("work history") || q.includes("intern")) return content.experiences.length ? `Current experience includes ${content.experiences.map((item) => `${item.role} at ${item.company}`).join("; ")}.` : "No professional experience entries are published on the portfolio yet.";
     if (q.includes("certificate") || q.includes("certification") || q.includes("credential")) return content.certificates.length ? `Certificates currently published: ${content.certificates.map((item) => `${item.title}${item.issuer ? ` — ${item.issuer}` : ""}`).join("; ")}.` : "No certificates are published on the portfolio yet.";
     if (q.includes("testimonial") || q.includes("recommendation") || q.includes("review")) return content.testimonials.length ? `Recommendations currently published: ${content.testimonials.map((item) => `${item.name}${item.company ? ` — ${item.company}` : ""}`).join("; ")}.` : "No testimonials or recommendations are published on the portfolio yet.";
-    if (q.includes("hire") || q.includes("contact") || q.includes("whatsapp") || q.includes("available")) return `For work opportunities, use the Hire Me / WhatsApp button, call ${content.identity.phone}, or email ${content.identity.email}.`;
+    if (q.includes("hire") || q.includes("contact") || q.includes("whatsapp") || q.includes("available")) return `For work opportunities, use WhatsApp, tap Call me to call ${content.identity.phone}, or email ${content.identity.email}.`;
     if (q.includes("cv") || q.includes("resume")) return `Use the View CV button near the top of the portfolio to open ${name}’s current CV.`;
     if (q.includes("location") || q.includes("where")) return `${name} is based in ${content.identity.location}.`;
     return `I can help with ${name}’s services, skills, projects, education, experience, certificates, recommendations, CV or contact details.`;
@@ -658,7 +664,7 @@ function Chatbot({ content }: { content: PortfolioContent }) {
               {typing && <div className="typing"><span/><span/><span/></div>}
             </div>
             <div className="quick-actions">{quickQuestions.map(({ label, prompt, Icon: QuickIcon }) => <button key={label} onClick={() => send(prompt)}><QuickIcon size={14}/><span>{label}</span></button>)}</div>
-            <div className="chat-contact-row"><a href={whatsappHref} target="_blank" rel="noreferrer" onClick={() => trackPortfolioEvent("whatsapp_click", "Chatbot")}><Icons.message size={14}/> WhatsApp</a><a href={`mailto:${content.identity.email}`} onClick={() => trackPortfolioEvent("email_open", "Chatbot mailto")}><Icons.mail size={14}/> Email</a><a href={phoneHref} onClick={() => trackPortfolioEvent("call_click", "Chatbot")}><Icons.phone size={14}/> Call</a></div>
+            <div className="chat-contact-row"><a href={whatsappHref} target="_blank" rel="noreferrer" onClick={() => trackPortfolioEvent("whatsapp_click", "Chatbot")}><Icons.message size={14}/> WhatsApp</a><a href={`mailto:${content.identity.email}`} onClick={() => trackPortfolioEvent("email_open", "Chatbot mailto")}><Icons.mail size={14}/> Email</a><a href={phoneHref} onClick={() => trackPortfolioEvent("call_click", "Chatbot")}><Icons.phone size={14}/> Call me</a></div>
             <form className="chat-input" onSubmit={submit}><div className="chat-input-shell"><Icons.message size={15}/><input value={input} onChange={(e) => setInput(e.target.value)} placeholder={`Ask about ${name}...`} aria-label="Chat message" /></div><button type="submit" aria-label="Send message"><Icons.send size={17}/></button></form>
           </motion.aside>
         )}
@@ -981,6 +987,7 @@ export default function Portfolio({ focusProjectId }: { focusProjectId?: string 
               <div className="about-contact-strip">
                 <a href={`mailto:${content.identity.email}`} onClick={() => trackPortfolioEvent("email_open", "About mailto")}><Icons.mail size={16}/> {content.identity.email}</a>
                 <a href={whatsappHref} target="_blank" rel="noreferrer" onClick={() => trackPortfolioEvent("whatsapp_click", "About")}><Icons.message size={16}/> WhatsApp</a>
+                <a href={phoneHref} onClick={() => trackPortfolioEvent("call_click", "About")}><Icons.phone size={16}/> Call me</a>
               </div>
             </div>
           </div>
@@ -1128,7 +1135,7 @@ export default function Portfolio({ focusProjectId }: { focusProjectId?: string 
             <a className="brand footer-brand" href="#top"><span className="brand-mark">{content.identity.brandInitials}</span><span className="brand-copy">{content.identity.firstName.toUpperCase()}<br/><small>{content.identity.lastName.toUpperCase()}</small></span></a>
             <div className="footer-links footer-icon-links">
               {socialLinks.map((item) => { const SocialIcon = socialIconMap[item.icon] || Icons.external; return <a key={item.id} href={item.href} target="_blank" rel="noreferrer" onClick={() => trackPortfolioEvent("social_click", `Footer ${item.label}`)}><SocialIcon size={18}/><span>{item.label}</span></a>; })}
-              <a href={`mailto:${content.identity.email}`} onClick={() => trackPortfolioEvent("email_open", "Footer mailto")}><Icons.mail size={18}/><span>Email</span></a><a href={whatsappHref} target="_blank" rel="noreferrer" onClick={() => trackPortfolioEvent("whatsapp_click", "Footer")}><Icons.message size={18}/><span>WhatsApp</span></a>
+              <a href={`mailto:${content.identity.email}`} onClick={() => trackPortfolioEvent("email_open", "Footer mailto")}><Icons.mail size={18}/><span>Email</span></a><a href={whatsappHref} target="_blank" rel="noreferrer" onClick={() => trackPortfolioEvent("whatsapp_click", "Footer")}><Icons.message size={18}/><span>WhatsApp</span></a><a href={phoneHref} onClick={() => trackPortfolioEvent("call_click", "Footer")}><Icons.phone size={18}/><span>Call me</span></a>
             </div>
           </div>
           <div className="footer-bottom"><span>© {new Date().getFullYear()} {content.identity.name}. All rights reserved.</span><span>{content.identity.footerTagline}</span></div>
