@@ -10,6 +10,7 @@ import {
   useSpring,
 } from "motion/react";
 import { FormEvent, ReactNode, useEffect, useRef, useState, type ComponentType } from "react";
+import { createPortal } from "react-dom";
 import { DEFAULT_PORTFOLIO_CONTENT, itemNumber, projectNumber, type ContentIconKey, type PortfolioContent, type ProjectIconKey, type SocialLink } from "@/lib/portfolio-content";
 import { resolveVideoSource } from "@/lib/video";
 import { trackPortfolioEvent } from "@/lib/analytics-client";
@@ -211,8 +212,76 @@ function RotatingImage({ images, alt, className = "", eager = false, interval = 
   </div>;
 }
 
+function ProjectVideoPlayer({ open, videoUrl, title, onClose }: { open: boolean; videoUrl?: string; title: string; onClose: () => void }) {
+  const source = resolveVideoSource(videoUrl, "player");
+
+  useEffect(() => {
+    if (!open) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [open, onClose]);
+
+  if (!open || typeof document === "undefined" || !source) return null;
+
+  return createPortal(
+    <motion.div
+      className="project-player-backdrop"
+      role="dialog"
+      aria-modal="true"
+      aria-label={`${title} video player`}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.22 }}
+      onClick={onClose}
+    >
+      <motion.div
+        className="project-player-modal"
+        initial={{ opacity: 0, y: 22, scale: 0.985 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        exit={{ opacity: 0, y: 12, scale: 0.99 }}
+        transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+        onClick={(event) => event.stopPropagation()}
+      >
+        <div className="project-player-head">
+          <div>
+            <span>PROJECT DEMO</span>
+            <strong>{title}</strong>
+          </div>
+          <button type="button" onClick={onClose} aria-label="Close video player"><Icons.close size={18}/></button>
+        </div>
+        <div className="project-player-stage">
+          {source.kind === "direct" ? (
+            <video className="project-player-video" src={source.src} autoPlay controls playsInline preload="metadata" />
+          ) : source.kind === "embed" ? (
+            <iframe className="project-player-embed" src={source.src} title={`${title} ${source.provider} player`} allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowFullScreen />
+          ) : (
+            <div className="project-player-external">
+              <Icons.external size={34}/>
+              <strong>This provider opens in its own player.</strong>
+              <span>{source.provider}</span>
+              <a href={source.src} target="_blank" rel="noreferrer">Open video <Icons.external size={15}/></a>
+            </div>
+          )}
+        </div>
+        <div className="project-player-foot"><span>{source.provider}</span><span>Press Esc to close</span></div>
+      </motion.div>
+    </motion.div>,
+    document.body,
+  );
+}
+
 function ProjectMediaShowcase({ images, videoUrl, title, number }: { images: string[]; videoUrl?: string; title: string; number: string }) {
   const [active, setActive] = useState(0);
+  const [playerOpen, setPlayerOpen] = useState(false);
   const touchStartX = useRef<number | null>(null);
   const video = resolveVideoSource(videoUrl);
   const imageItems = images.filter(Boolean).slice(0, 12).map((src) => ({ type: "image" as const, src }));
@@ -288,12 +357,13 @@ function ProjectMediaShowcase({ images, videoUrl, title, number }: { images: str
   >
     <AnimatePresence mode="sync" initial={false}>
       <motion.div key={current.type === "video" ? `video:${current.source.src}` : `image:${current.src}`} className="project-gallery-frame" initial={{ opacity: 0.18, scale: 1.018 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.55, ease: [0.22,1,0.36,1] }}>
-        {current.type === "image" ? <ManagedImage src={current.src} alt={`${title} screenshot ${safeActive + 1}`} className="project-screenshot"/> : current.source.kind === "direct" ? <video className="project-demo-video" src={current.source.src} poster={imageItems[0]?.src || undefined} autoPlay muted loop playsInline preload="auto" aria-label={`${title} demo video`} /> : current.source.kind === "embed" ? <iframe className="project-demo-embed" src={current.source.src} title={`${title} ${current.source.provider} demo`} allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowFullScreen loading="eager"/> : <a className="project-external-video" href={current.source.src} target="_blank" rel="noreferrer"><Icons.external size={28}/><strong>Watch project demo</strong><span>{current.source.provider}</span></a>}
+        {current.type === "image" ? <ManagedImage src={current.src} alt={`${title} screenshot ${safeActive + 1}`} className="project-screenshot"/> : current.source.kind === "direct" ? <video className="project-demo-video" src={current.source.src} poster={imageItems[0]?.src || undefined} autoPlay muted loop playsInline preload="auto" aria-label={`${title} demo video`} /> : current.source.kind === "embed" ? <iframe className="project-demo-embed" src={current.source.src} title={`${title} ${current.source.provider} demo`} allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowFullScreen loading="eager"/> : <div className="project-external-video"><Icons.external size={28}/><strong>Watch project demo</strong><span>{current.source.provider}</span></div>}
+        {current.type === "video" ? <button type="button" className="project-video-click-layer" aria-label={`Open ${title} video player`} onClick={(event) => { event.preventDefault(); event.stopPropagation(); setPlayerOpen(true); }} /> : null}
       </motion.div>
     </AnimatePresence>
     <div className="project-screenshot-overlay"/>
     <div className="project-visual-top project-visual-top-image"><span>PROJECT {number}</span><span><i /> {videoLabel}</span></div>
-    {current.type === "video" && current.source.kind !== "direct" ? <a className="project-video-open" href={current.source.kind === "embed" ? videoUrl : current.source.src} target="_blank" rel="noreferrer" aria-label="Open video in new tab" onClick={(event) => event.stopPropagation()}><Icons.external size={14}/></a> : null}
+    {current.type === "video" ? <button type="button" className="project-video-open" aria-label="Open video player" title="Open video player" onClick={(event) => { event.preventDefault(); event.stopPropagation(); setPlayerOpen(true); }}><Icons.external size={14}/></button> : null}
     {canSkipVideo ? <div className="project-video-skip" role="button" tabIndex={0} onClick={skipVideo} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") skipVideo(event); }} aria-label="Skip project video and show screenshots"><span>Skip video</span><Icons.next size={14}/></div> : null}
     {media.length > 1 ? <>
       <div className="media-gallery-nav project-gallery-nav" aria-label={`${title} media navigation`}>
@@ -302,6 +372,7 @@ function ProjectMediaShowcase({ images, videoUrl, title, number }: { images: str
       </div>
       <div className="project-gallery-status"><span>{String(safeActive + 1).padStart(2, "0")} / {String(media.length).padStart(2, "0")}</span><div>{media.map((item, i) => <i key={`${item.type}-${i}`} className={i === safeActive ? "active" : ""}/>)}</div></div>
     </> : null}
+    <AnimatePresence>{playerOpen ? <ProjectVideoPlayer open={playerOpen} videoUrl={videoUrl} title={title} onClose={() => setPlayerOpen(false)} /> : null}</AnimatePresence>
   </div>;
 }
 
@@ -601,7 +672,7 @@ function Chatbot({ content }: { content: PortfolioContent }) {
     return () => window.cancelAnimationFrame(frame);
   }, [messages, typing, open]);
 
-  const reply = (text: string) => {
+  const fallbackReply = (text: string) => {
     const q = text.toLowerCase();
     const allSkills = content.skills.groups.flatMap((group) => group.items).slice(0, 18).join(", ");
     const services = content.skills.services.map((service) => service.title).join(", ");
@@ -623,19 +694,38 @@ function Chatbot({ content }: { content: PortfolioContent }) {
     return `I can help with ${name}’s services, skills, projects, education, experience, certificates, recommendations, CV or contact details.`;
   };
 
-  const send = (text: string) => {
+  const send = async (text: string) => {
     const clean = text.trim();
     if (!clean || typing) return;
+
+    const history = messages.slice(1).slice(-8).map((message) => ({
+      role: message.from === "user" ? "user" : "model",
+      text: message.text,
+    }));
+
     setMessages((m) => [...m, { from: "user", text: clean }]);
     setInput("");
     setTyping(true);
-    window.setTimeout(() => {
-      setMessages((m) => [...m, { from: "bot", text: reply(clean) }]);
+
+    try {
+      const response = await fetch("/.netlify/functions/chatbot-gemini", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ message: clean, history }),
+      });
+      const data = await response.json().catch(() => ({})) as { reply?: string; error?: string };
+      const answer = response.ok && typeof data.reply === "string" && data.reply.trim()
+        ? data.reply.trim()
+        : fallbackReply(clean);
+      setMessages((m) => [...m, { from: "bot", text: answer }]);
+    } catch {
+      setMessages((m) => [...m, { from: "bot", text: fallbackReply(clean) }]);
+    } finally {
       setTyping(false);
-    }, 520);
+    }
   };
 
-  const submit = (e: FormEvent) => { e.preventDefault(); send(input); };
+  const submit = (e: FormEvent) => { e.preventDefault(); void send(input); };
   const quickQuestions = [
     { label: "Services", prompt: "What services do you offer?", Icon: Icons.layers },
     { label: "Projects", prompt: "Show projects", Icon: Icons.code },
@@ -653,7 +743,7 @@ function Chatbot({ content }: { content: PortfolioContent }) {
               <div className="chat-head-copy"><strong>VT Assistant</strong><span><i /> Online · Portfolio guide</span></div>
               <button className="chat-close" onClick={() => setOpen(false)} aria-label="Close chatbot"><Icons.close size={18}/></button>
             </div>
-            <div className="chat-intro"><div className="chat-intro-icon"><Icons.sparkles size={16}/></div><div><strong>Ask anything about {name}</strong><span>Services, skills, projects, credentials or contact details.</span></div></div>
+            <div className="chat-intro"><div className="chat-intro-icon"><Icons.sparkles size={16}/></div><div><strong>Ask anything about {name}</strong><span>Ask in English, Sinhala, Singlish or your preferred language.</span></div></div>
             <div className="chat-body" ref={chatBodyRef}>
               {messages.map((message, index) => (
                 <motion.div key={`${message.from}-${index}`} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className={`chat-message ${message.from}`}>
@@ -663,7 +753,7 @@ function Chatbot({ content }: { content: PortfolioContent }) {
               ))}
               {typing && <div className="typing"><span/><span/><span/></div>}
             </div>
-            <div className="quick-actions">{quickQuestions.map(({ label, prompt, Icon: QuickIcon }) => <button key={label} onClick={() => send(prompt)}><QuickIcon size={14}/><span>{label}</span></button>)}</div>
+            <div className="quick-actions">{quickQuestions.map(({ label, prompt, Icon: QuickIcon }) => <button key={label} onClick={() => void send(prompt)}><QuickIcon size={14}/><span>{label}</span></button>)}</div>
             <div className="chat-contact-row"><a href={whatsappHref} target="_blank" rel="noreferrer" onClick={() => trackPortfolioEvent("whatsapp_click", "Chatbot")}><Icons.message size={14}/> WhatsApp</a><a href={`mailto:${content.identity.email}`} onClick={() => trackPortfolioEvent("email_open", "Chatbot mailto")}><Icons.mail size={14}/> Email</a><a href={phoneHref} onClick={() => trackPortfolioEvent("call_click", "Chatbot")}><Icons.phone size={14}/> Call me</a></div>
             <form className="chat-input" onSubmit={submit}><div className="chat-input-shell"><Icons.message size={15}/><input value={input} onChange={(e) => setInput(e.target.value)} placeholder={`Ask about ${name}...`} aria-label="Chat message" /></div><button type="submit" aria-label="Send message"><Icons.send size={17}/></button></form>
           </motion.aside>
