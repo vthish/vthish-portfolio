@@ -8,3 +8,4 @@ out
 
 # Local Netlify folder
 .netlify
+deno.lock
