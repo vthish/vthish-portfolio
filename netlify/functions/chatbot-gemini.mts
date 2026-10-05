@@ -141,10 +141,22 @@ export default async (req: Request) => {
     if (!message) return Response.json({ error: "Please enter a message." }, { status: 400 });
     if (!(await checkRateLimit(req))) return Response.json({ error: "Chat limit reached. Please try again later." }, { status: 429 });
 
-    const apiKey = process.env.GEMINI_API_KEY;
+    // Prefer a portfolio-specific variable so Netlify/local shell variables cannot
+    // accidentally shadow the Gemini key. Keep GEMINI_API_KEY as a fallback for
+    // existing production setups.
+    const portfolioKey = clean(process.env.VT_GEMINI_KEY, 200);
+    const legacyKey = clean(process.env.GEMINI_API_KEY, 200);
+    const apiKey = portfolioKey || legacyKey;
     if (!apiKey) return Response.json({ error: "AI assistant is not configured." }, { status: 503 });
 
-    const model = clean(process.env.GEMINI_MODEL, 100) || "gemini-3.8-flash";
+    const model = clean(process.env.GEMINI_MODEL, 100) || "gemini-3.5-flash";
+
+    // Safe diagnostic: logs only which variable was used and its length, never the key.
+    console.log("Gemini config:", {
+      keySource: portfolioKey ? "VT_GEMINI_KEY" : "GEMINI_API_KEY",
+      keyLength: apiKey.length,
+      model,
+    });
     const content = await getPortfolioContent();
     const history = normalizeHistory(body.history);
     const payload = {
