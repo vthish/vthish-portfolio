@@ -175,7 +175,7 @@ export default async (req: Request) => {
     if (!apiKey) return Response.json({ error: "AI assistant is not configured." }, { status: 503 });
 
     const normalModel = clean(process.env.GEMINI_MODEL, 100) || "gemini-3.5-flash";
-    const searchModel = clean(process.env.GEMINI_SEARCH_MODEL, 100) || "gemini-2.5-flash";
+    const searchModel = clean(process.env.GEMINI_SEARCH_MODEL, 100) || normalModel;
     const useGoogleSearch = wantsGoogleSearch(message);
     const model = useGoogleSearch ? searchModel : normalModel;
 
@@ -188,30 +188,58 @@ export default async (req: Request) => {
     });
     const content = await getPortfolioContent();
     const history = normalizeHistory(body.history);
-    const payload = {
-      system_instruction: { parts: [{ text: systemInstruction(content) }] },
+
+    const buildPayload = (googleSearch: boolean, searchUnavailableFallback = false) => ({
+      system_instruction: {
+        parts: [{
+          text: `${systemInstruction(content)}${searchUnavailableFallback ? `
+
+SEARCH FALLBACK:
+- Live Google Search was requested but is currently unavailable for this request.
+- Answer using PORTFOLIO DATA only.
+- If the user asked for a web-only/current fact that is not in PORTFOLIO DATA, clearly say you cannot verify it right now.
+- Do not claim that you searched Google.` : ""}`,
+        }],
+      },
       contents: [...history, { role: "user", parts: [{ text: message }] }],
-      ...(useGoogleSearch ? { tools: [{ googleSearch: {} }] } : {}),
+      ...(googleSearch ? { tools: [{ googleSearch: {} }] } : {}),
       generationConfig: {
         temperature: 0.2,
         topP: 0.85,
         maxOutputTokens: 500,
       },
-    };
-
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`, {
-      method: "POST",
-      headers: {
-        "content-type": "application/json",
-        "x-goog-api-key": apiKey,
-      },
-      body: JSON.stringify(payload),
     });
 
-    const data = await response.json().catch(() => ({})) as {
-      candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>;
-      error?: { message?: string };
+    const callGemini = async (requestModel: string, payload: ReturnType<typeof buildPayload>) => {
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(requestModel)}:generateContent`, {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          "x-goog-api-key": apiKey,
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await response.json().catch(() => ({})) as {
+        candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>;
+        error?: { message?: string };
+      };
+
+      return { response, data };
     };
+
+    let { response, data } = await callGemini(model, buildPayload(useGoogleSearch));
+
+    // If a search-enabled request fails because Search grounding is unavailable,
+    // quota-limited, billing-gated, or otherwise rejected, retry once without
+    // Google Search using the normal portfolio model. This keeps the assistant
+    // useful even when live search is unavailable.
+    if (useGoogleSearch && !response.ok) {
+      const searchReason = data.error?.message || `Gemini search request failed (${response.status}).`;
+      console.warn("Gemini Google Search unavailable; retrying without search:", searchReason);
+
+      ({ response, data } = await callGemini(normalModel, buildPayload(false, true)));
+    }
 
     if (!response.ok) {
       const reason = data.error?.message || `Gemini request failed (${response.status}).`;
