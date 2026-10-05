@@ -100,8 +100,8 @@ function systemInstruction(content: PortfolioContent) {
 
 STRICT SCOPE:
 - Answer ONLY about ${owner}, this portfolio, his public skills, services, projects, education, experience, certificates, recommendations, CV, availability, public contact details and public social links.
-- Use PORTFOLIO DATA below as the primary source for stable portfolio facts. Google Search is available only to find or verify public web information specifically about ${owner} when it can improve the answer.
-- When using Google Search, keep the search focused on ${owner} and use portfolio identity/profile clues to avoid mixing him up with another person. Never use Google Search for unrelated people or general topics.
+- Use PORTFOLIO DATA below as the primary source for stable portfolio facts. Google Search may be enabled for requests that explicitly ask to search/check Google, the web, internet, online/public information, or current/latest public information about ${owner}.
+- When Google Search is enabled, keep the search focused on ${owner} and use portfolio identity/profile clues to avoid mixing him up with another person. Never use Google Search for unrelated people or general topics.
 - Never invent, infer or add unsupported personal facts. If public search results are ambiguous or cannot be confidently matched to ${owner}, say you could not verify the information.
 - If the user asks something unrelated to ${owner} or this portfolio (general knowledge, coding help, news, politics, other people, etc.), politely say you only answer questions about ${owner} and his portfolio, then suggest a relevant portfolio topic.
 - If the requested fact is not present in PORTFOLIO DATA and cannot be verified from public Google Search results about ${owner}, clearly say it could not be verified. Do not guess.
@@ -121,6 +121,29 @@ PUBLIC CONTACT INFO:
 
 PORTFOLIO DATA:
 ${compactPortfolioKnowledge(content)}`;
+}
+
+function wantsGoogleSearch(message: string) {
+  const text = message.toLowerCase();
+  const searchSignals = [
+    "google",
+    "search",
+    "serach",
+    "web",
+    "internet",
+    "online",
+    "public info",
+    "public information",
+    "latest",
+    "current",
+    "hoyala",
+    "hoyanna",
+    "hoyaganna",
+    "හොය",
+    "ගූගල්",
+    "සර්ච්",
+  ];
+  return searchSignals.some((signal) => text.includes(signal));
 }
 
 function normalizeHistory(value: unknown) {
@@ -151,20 +174,24 @@ export default async (req: Request) => {
     const apiKey = portfolioKey || legacyKey;
     if (!apiKey) return Response.json({ error: "AI assistant is not configured." }, { status: 503 });
 
-    const model = clean(process.env.GEMINI_MODEL, 100) || "gemini-3.5-flash";
+    const normalModel = clean(process.env.GEMINI_MODEL, 100) || "gemini-3.5-flash";
+    const searchModel = clean(process.env.GEMINI_SEARCH_MODEL, 100) || "gemini-2.5-flash";
+    const useGoogleSearch = wantsGoogleSearch(message);
+    const model = useGoogleSearch ? searchModel : normalModel;
 
-    // Safe diagnostic: logs only which variable was used and its length, never the key.
+    // Safe diagnostic: logs only configuration metadata, never the key itself.
     console.log("Gemini config:", {
       keySource: portfolioKey ? "VT_GEMINI_KEY" : "GEMINI_API_KEY",
       keyLength: apiKey.length,
       model,
+      googleSearch: useGoogleSearch,
     });
     const content = await getPortfolioContent();
     const history = normalizeHistory(body.history);
     const payload = {
       system_instruction: { parts: [{ text: systemInstruction(content) }] },
       contents: [...history, { role: "user", parts: [{ text: message }] }],
-      tools: [{ googleSearch: {} }],
+      ...(useGoogleSearch ? { tools: [{ googleSearch: {} }] } : {}),
       generationConfig: {
         temperature: 0.2,
         topP: 0.85,
