@@ -174,7 +174,7 @@ export default async (req: Request) => {
     const apiKey = portfolioKey || legacyKey;
     if (!apiKey) return Response.json({ error: "AI assistant is not configured." }, { status: 503 });
 
-    const normalModel = clean(process.env.GEMINI_MODEL, 100) || "gemini-3.5-flash";
+    const normalModel = clean(process.env.GEMINI_MODEL, 100) || clean(process.env.GEMINI_SEARCH_MODEL, 100) || "gemini-2.5-flash";
     const searchModel = clean(process.env.GEMINI_SEARCH_MODEL, 100) || normalModel;
     const useGoogleSearch = wantsGoogleSearch(message);
     const model = useGoogleSearch ? searchModel : normalModel;
