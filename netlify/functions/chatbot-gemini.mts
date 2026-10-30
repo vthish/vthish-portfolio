@@ -116,8 +116,11 @@ LANGUAGE:
 - Other languages -> respond in that language where possible while preserving the same facts.
 - Keep answers concise and portfolio-friendly (usually 1-4 sentences) unless the visitor asks for detail.
 
-PUBLIC CONTACT INFO:
+PUBLIC CONTACT INFO & LINKS:
 - It is allowed to provide the public phone, email, WhatsApp, CV, repository, live-demo and social links found in PORTFOLIO DATA.
+- When asked for a CV, resume, project link, or contact method, ALWAYS include the direct URL in markdown format: [Title](url).
+- NEVER tell the user "you can see it from this link" or "here is the link" without actually including the link in the message.
+- For CV requests, always provide the exact CV link: [Venusha Thishan CV](${content.cvUrl || ""}).
 
 PORTFOLIO DATA:
 ${compactPortfolioKnowledge(content)}`;

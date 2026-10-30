@@ -689,7 +689,7 @@ function Chatbot({ content }: { content: PortfolioContent }) {
     if (q.includes("certificate") || q.includes("certification") || q.includes("credential")) return content.certificates.length ? `Certificates currently published: ${content.certificates.map((item) => `${item.title}${item.issuer ? ` — ${item.issuer}` : ""}`).join("; ")}.` : "No certificates are published on the portfolio yet.";
     if (q.includes("testimonial") || q.includes("recommendation") || q.includes("review")) return content.testimonials.length ? `Recommendations currently published: ${content.testimonials.map((item) => `${item.name}${item.company ? ` — ${item.company}` : ""}`).join("; ")}.` : "No testimonials or recommendations are published on the portfolio yet.";
     if (q.includes("hire") || q.includes("contact") || q.includes("whatsapp") || q.includes("available")) return `For work opportunities, use WhatsApp, tap Call me to call ${content.identity.phone}, or email ${content.identity.email}.`;
-    if (q.includes("cv") || q.includes("resume")) return `Use the View CV button near the top of the portfolio to open ${name}’s current CV.`;
+    if (q.includes("cv") || q.includes("resume")) return content.cvUrl ? `Here is ${name}’s CV: [Venusha Thishan CV](${content.cvUrl})` : `Use the View CV button near the top of the portfolio to open ${name}’s current CV.`;
     if (q.includes("location") || q.includes("where")) return `${name} is based in ${content.identity.location}.`;
     return `I can help with ${name}’s services, skills, projects, education, experience, certificates, recommendations, CV or contact details.`;
   };
@@ -748,7 +748,9 @@ function Chatbot({ content }: { content: PortfolioContent }) {
               {messages.map((message, index) => (
                 <motion.div key={`${message.from}-${index}`} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className={`chat-message ${message.from}`}>
                   {message.from === "bot" && <span className="message-avatar"><Icons.bot size={13}/></span>}
-                  <span>{message.text}</span>
+                  <div className="chat-message-text">
+                    <ChatMessageContent text={message.text} />
+                  </div>
                 </motion.div>
               ))}
               {typing && <div className="typing"><span/><span/><span/></div>}
@@ -763,6 +765,69 @@ function Chatbot({ content }: { content: PortfolioContent }) {
         <span className="chat-ping" />{open ? <Icons.close size={21}/> : <Icons.bot size={22}/>}
       </motion.button>
     </>
+  );
+}
+
+function ChatMessageContent({ text }: { text: string }) {
+  const linkRegex = /\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)|(https?:\/\/[^\s<]+)/g;
+  const parts: React.ReactNode[] = [];
+  let lastIndex = 0;
+  let match: RegExpExecArray | null;
+
+  while ((match = linkRegex.exec(text)) !== null) {
+    if (match.index > lastIndex) {
+      parts.push(renderFormattedText(text.slice(lastIndex, match.index), `txt-${lastIndex}`));
+    }
+    if (match[1] && match[2]) {
+      const label = match[1];
+      const url = match[2];
+      parts.push(
+        <a
+          key={`link-${match.index}`}
+          href={url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="chat-link-pill"
+        >
+          <span>{label}</span>
+          <Icons.external size={11} />
+        </a>
+      );
+    } else if (match[3]) {
+      const url = match[3];
+      parts.push(
+        <a
+          key={`raw-${match.index}`}
+          href={url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="chat-inline-link"
+        >
+          {url}
+        </a>
+      );
+    }
+    lastIndex = linkRegex.lastIndex;
+  }
+
+  if (lastIndex < text.length) {
+    parts.push(renderFormattedText(text.slice(lastIndex), `txt-${lastIndex}`));
+  }
+
+  return <>{parts}</>;
+}
+
+function renderFormattedText(str: string, keyPrefix: string) {
+  const boldParts = str.split(/(\*\*[^*]+\*\*)/g);
+  return (
+    <span key={keyPrefix}>
+      {boldParts.map((sub, i) => {
+        if (sub.startsWith("**") && sub.endsWith("**")) {
+          return <strong key={i}>{sub.slice(2, -2)}</strong>;
+        }
+        return sub;
+      })}
+    </span>
   );
 }
 
