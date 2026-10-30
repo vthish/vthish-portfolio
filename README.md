@@ -310,7 +310,7 @@ Projects can be managed from the private CMS with up to 8 screenshots plus one o
 
 The private portfolio CMS supports multi-image galleries across the main portfolio visuals, up to 12 project screenshots, universal project demo links (YouTube/Vimeo/Loom/Drive/TikTok and more, with a safe external fallback), and a public on-site email form powered by the existing Resend configuration.
 
-## 2026 professional maintenance upgrades
+## 2026 professional maintenance upgrades 
 
 This build keeps the existing public layout and animation system intact while adding maintenance/security/measurement features around it:
 
