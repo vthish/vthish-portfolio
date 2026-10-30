@@ -1,3 +1,4 @@
 [build.environment]
   SECRETS_SCAN_OMIT_KEYS = "GEMINI_SEARCH_MODEL,GEMINI_MODEL"
   SECRETS_SCAN_OMIT_PATHS = "README.txt,netlify/functions/chatbot-gemini.mts"
+

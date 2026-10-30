@@ -978,7 +978,9 @@ export default function Portfolio({ focusProjectId }: { focusProjectId?: string 
 
         <motion.header className="nav-wrap" initial={false} animate={pageVisible ? { opacity: 1 } : { opacity: 0 }} transition={{ duration: 0.72, ease: [0.22, 1, 0.36, 1] }}>
           <a className="brand" href="#top" aria-label={`${content.identity.name} home`}>
-            <span className="brand-mark">{content.identity.brandInitials}</span>
+            <span className="brand-mark">
+              <Image src="/images/vt-logo.jpg" alt={content.identity.brandInitials || "VT"} width={46} height={46} className="brand-mark-img" priority />
+            </span>
             <span className="brand-copy">{content.identity.firstName.toUpperCase()}<br/><small>{content.identity.lastName.toUpperCase()}</small></span>
           </a>
           <nav className="desktop-nav" aria-label="Main navigation">
@@ -1222,7 +1224,7 @@ export default function Portfolio({ focusProjectId }: { focusProjectId?: string 
 
         <footer>
           <div className="footer-top">
-            <a className="brand footer-brand" href="#top"><span className="brand-mark">{content.identity.brandInitials}</span><span className="brand-copy">{content.identity.firstName.toUpperCase()}<br/><small>{content.identity.lastName.toUpperCase()}</small></span></a>
+            <a className="brand footer-brand" href="#top"><span className="brand-mark"><Image src="/images/vt-logo.jpg" alt={content.identity.brandInitials || "VT"} width={46} height={46} className="brand-mark-img" /></span><span className="brand-copy">{content.identity.firstName.toUpperCase()}<br/><small>{content.identity.lastName.toUpperCase()}</small></span></a>
             <div className="footer-links footer-icon-links">
               {socialLinks.map((item) => { const SocialIcon = socialIconMap[item.icon] || Icons.external; return <a key={item.id} href={item.href} target="_blank" rel="noreferrer" onClick={() => trackPortfolioEvent("social_click", `Footer ${item.label}`)}><SocialIcon size={18}/><span>{item.label}</span></a>; })}
               <a href={`mailto:${content.identity.email}`} onClick={() => trackPortfolioEvent("email_open", "Footer mailto")}><Icons.mail size={18}/><span>Email</span></a><a href={whatsappHref} target="_blank" rel="noreferrer" onClick={() => trackPortfolioEvent("whatsapp_click", "Footer")}><Icons.message size={18}/><span>WhatsApp</span></a><a href={phoneHref} onClick={() => trackPortfolioEvent("call_click", "Footer")}><Icons.phone size={18}/><span>Call me</span></a>

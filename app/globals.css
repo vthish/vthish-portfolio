@@ -328,9 +328,13 @@ html.portfolio-loading body { overflow: hidden; }
 .brand { display: inline-flex; align-items: center; gap: 10px; }
 .brand-mark {
   width: 46px; height: 46px; display: grid; place-items: center;
-  font-weight: 900; letter-spacing: -.05em; color: #071126;
-  background: linear-gradient(135deg, #91c6ff, #6b82ff 58%, #9178ff);
   border-radius: 14px; box-shadow: 0 0 32px rgba(89, 137, 255, .18);
+  overflow: hidden; position: relative;
+  background: #071126;
+  border: 1px solid rgba(132, 166, 255, .18);
+}
+.brand-mark-img {
+  width: 100%; height: 100%; object-fit: cover; display: block;
 }
 .brand-copy { font-size: 12px; font-weight: 850; letter-spacing: .16em; line-height: 1.12; }
 .brand-copy small { font-size: 10px; color: #aeb8cc; font-weight: 700; }
